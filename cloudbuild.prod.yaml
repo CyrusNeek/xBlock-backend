@@ -10,12 +10,13 @@ steps:
     args:
       - run
       - deploy
-      - backend-dev
+      - backend-prod
       - --image=us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$COMMIT_SHA
       - --region=us-central1
       - --platform=managed
       - --allow-unauthenticated
-      - --port=8000
+      - --port=8080
+    
 
 images:
   - us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$COMMIT_SHA
