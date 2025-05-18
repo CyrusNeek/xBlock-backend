@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    netcat \
+    netcat-openbsd \
     gcc \
     postgresql-client \
     libpq-dev \
@@ -20,11 +20,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the rest of the Django project
+# Copy the Django project
 COPY . .
 
 # Expose Cloud Run's required port
 EXPOSE 8080
 
-# Start Django using Gunicorn on port 8080
+# Start Django using Gunicorn
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8080"]
