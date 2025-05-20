@@ -1,0 +1,59 @@
+
+name: Build And Deploy Prod
+
+on:
+  # pull_request:
+  #   types: [closed]
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Deploy the latest changes from Prod to server
+
+    steps:
+      - name: Regain previous folder owners
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_PROD }}
+          username: ${{ secrets.USERNAME_PROD }}
+          key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          script: |
+            cd /home/git-action-xblock/prod
+  
+      - name: Checkout the files
+        uses: actions/checkout@v2
+  
+      - name: Deploy to main server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY_PROD }}
+          REMOTE_HOST: ${{ secrets.HOST_PROD }}
+          REMOTE_USER: ${{ secrets.USERNAME_PROD }}
+          TARGET: /home/git-action-xblock/prod/server
+
+      - name: Executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_PROD }}
+          username: ${{ secrets.USERNAME_PROD }}
+          key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          command_timeout: 25m
+          script: |
+            sudo apt -y update         
+            cd /home/git-action-xblock/prod/server
+            cp ./server/docker-compose.prod.yml -f .
+            sudo echo ${{ secrets.CREDENTIALS_JSON_BASE64 }} | base64 --decode > server/credentials.json
+            sudo echo "${{ secrets.FIREBASE_CREDENTIALS }}" | base64 --decode > server/firebase_credentials.json
+            sudo echo "${{ secrets.XBRAIN_BACKEND_ENV }}" > server/.env
+            sudo echo "${{ secrets.FIREBASE_CREDENTIALS }}" | base64 --decode > server/firebase_credentials.json
+            sudo echo -e "\nGCP_BUCKET_NAME=xblock-storage\n" >> server/.env
+            sudo docker compose  down
+            sudo docker compose up celery web beat -d --build --force-recreate
+            sudo docker exec -i prod-web-1 python manage.py makemigrations --merge --no-input
+            sudo docker exec -i prod-web-1 python manage.py migrate
+            sudo docker system prune -a -f
+
+            

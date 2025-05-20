@@ -1,0 +1,90 @@
+
+name: 'hub-main'
+# version: '3.12'
+
+services:
+
+
+  web:
+    networks:
+        - xbrain
+    build: .
+    restart: always
+    command: bash run.sh
+    volumes:
+      - ./:/usr/src/app/
+    ports:
+      - 8000:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    
+    environment:
+      - DEBUG=1
+
+  
+
+
+  redis:
+    networks:
+      - xbrain
+
+    restart: always
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    # volumes:
+    #   - redis_data:/data
+
+  celery:
+    build: .
+    restart: always
+    command: celery -A xblock worker --loglevel=info
+    volumes:
+      - ./:/usr/src/app/
+    depends_on:
+      - web
+      - redis
+
+    networks:
+      - xbrain
+  
+  beat:
+    restart: always
+    build: .
+    command: celery -A xblock beat -S redbeat.RedBeatScheduler --loglevel=info
+    volumes:
+      - ./:/usr/src/app/
+    depends_on:
+      - web
+      - redis
+
+    networks:
+      - xbrain
+
+
+  flower:
+     restart: always
+     networks:
+      - xbrain
+     build: .
+     command: celery -A xblock --broker=redis://redis:6379/0 flower --port=5555 --basic-auth="hyiqiu23@gmail.com:hyq5566123"
+     volumes:
+       - ./:/usr/src/app/
+     ports:
+       - 5555:5555
+     depends_on:
+       - celery
+       - beat
+       - redis
+
+volumes:
+  weaviate_data: {}
+  postgres_data:
+  # redis_data:
+
+networks:
+  xbrain:
+    driver: bridge
