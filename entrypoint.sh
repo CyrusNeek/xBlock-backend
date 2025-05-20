@@ -1,9 +1,6 @@
 #!/bin/bash
 
-echo "🔐 Loading secrets from /secrets/backend.env"
-if [ -f /secrets/backend.env ]; then
-  export $(cat /secrets/backend.env | xargs)
-fi
+# 🔐 Secrets are now loaded from environment variables set by GCP Secret Manager and Cloud Run settings.
 
 echo "⚙️ Running Django migrations..."
 python manage.py migrate --noinput
