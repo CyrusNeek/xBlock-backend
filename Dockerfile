@@ -1,30 +1,21 @@
-# Use the official slim Python base image
-FROM python:3.10-slim
+# Stage 1: Install dependencies
+FROM python:3.11-slim as base
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    gcc \
-    postgresql-client \
-    libpq-dev \
-    && apt-get clean
-
-# Install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the Django project
 COPY . .
 
-# Expose Cloud Run's required port
+# Create a non-root user
+RUN adduser --disabled-password appuser
+RUN chown -R appuser /app
+USER appuser
+
 EXPOSE 8080
 
-# Start Django using Gunicorn
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8080"]
+CMD ["./entrypoint.sh"]

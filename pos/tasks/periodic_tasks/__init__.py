@@ -1,0 +1,1 @@
+from .upload_pos_to_bucket import upload_pos_data_to_bucket
