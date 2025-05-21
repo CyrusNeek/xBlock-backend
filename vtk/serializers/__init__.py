@@ -1,3 +1,0 @@
-from .xclassmate_quiz_serializer import XClassmateQuizSerializer
-from .xclassmate_serializer import XClassmateListSerializer, XClassmateUserSerializer, XClassmateSerializer, UpdateDiarizationRequestSerializer
-from .participant_serializer import ParticipantSerializer

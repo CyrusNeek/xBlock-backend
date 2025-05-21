@@ -1,8 +1,0 @@
-[
-    {
-      "origin": ["https://beta.xblock.ai", "https://stage.xblock.ai", "https://app.xblock.ai", "https://api.xblock.ai"],
-      "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
-      "responseHeader": ["Content-Type"],
-      "maxAgeSeconds": 3600
-    }
-]
