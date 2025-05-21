@@ -2,18 +2,25 @@
 
 echo "🧪 entrypoint.sh started at $(date)"
 
+# Load secrets
 if [ -f /secrets/backend.env ]; then
   echo "🔐 Loading secrets from /secrets/backend.env"
   export $(cat /secrets/backend.env | xargs)
 else
-  echo "❌ /secrets/backend.env not found!"
+  echo "❌ /secrets/backend.env NOT FOUND"
   exit 1
 fi
 
-echo "⚙️ Running Django check..."
-python manage.py check || exit 1
+# Debug Python path and env
+echo "🐍 PYTHONPATH: $PYTHONPATH"
+echo "🔧 DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
 
-echo "⚙️ Running Django migrations..."
+# Manually run Django shell to catch error
+echo "🧪 Running isolated import check..."
+python -c "import django; django.setup(); from django.apps import apps; apps.populate(apps.app_configs)" || exit 1
+
+# Continue if successful
+echo "✅ Django import check passed. Running migrations..."
 python manage.py migrate --noinput || exit 1
 
 echo "🚀 Starting Gunicorn..."
