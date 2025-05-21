@@ -4,11 +4,19 @@ echo "🧪 entrypoint.sh started at $(date)"
 
 # Load secrets
 if [ -f /secrets/backend.env ]; then
-  echo "🔐 Loading secrets from /secrets/backend.env"
-  export $(cat /secrets/backend.env | xargs)
+  echo "🔐 Loading secrets from /secrets/backend.env (using 'source')"
+  # Ensure lines are processed correctly, ignoring comments and trimming whitespace
+  # and handling various shell quoting.
+  set -o allexport # Export all subsequent variable assignments that don't have export already
+  source /secrets/backend.env # Source the .env file
+  set +o allexport # Stop automatically exporting
+  echo "✅ Secrets loaded from /secrets/backend.env"
 else
-  echo "❌ /secrets/backend.env NOT FOUND"
-  exit 1
+  # This path might be taken if Cloud Run is injecting environment variables directly
+  # and the file mount is not used or is a fallback.
+  # For now, we assume the file is critical for this setup.
+  echo "❌ CRITICAL: /secrets/backend.env NOT FOUND. Deployment requires this file for secret loading."
+  exit 1 # Exit if the secret file is not found, as per current design
 fi
 
 # Debug Python path and env
