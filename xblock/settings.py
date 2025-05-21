@@ -315,27 +315,51 @@ if DEBUG:
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+import logging
+import logging.config
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} | {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
     },
-    "root": {  # Define root logger here
+    "root": {
         "handlers": ["console"],
-        "level": "INFO",
+        "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
     },
     "loggers": {
-        "django": {  # You can add specific loggers for Django or your apps if needed
+        "django": {
             "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,  # Set to False to prevent duplicate logs
+            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            "propagate": False,
         },
-        # Add other specific loggers here if necessary
+        "django.request": {
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_REQUEST_LOG_LEVEL", "WARNING"),
+            "propagate": False,
+        },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_DB_LOG_LEVEL", "ERROR"),
+            "propagate": False,
+        },
     },
 }
+
 
 
 CONSTANCE_CONFIG = {
