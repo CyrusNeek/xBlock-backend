@@ -33,10 +33,12 @@ load_dotenv(find_dotenv())
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-d=(vl8ppddk+h95wy-z$3sydg_-h0m*n-h!a+tycod8dr)72gc"
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
-# # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", False)
+# SECURITY WARNING: don't run with debug turned on in production!
+# Cloud Run: Set DEBUG="False" or "True" as string in env vars
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -619,7 +621,8 @@ GOOGLE_OATH_CALLBACK_URL = os.getenv("GOOGLE_OATH_CALLBACK_URL")
 WEBHOOK_API_KEY = os.getenv("STRIPE_WEBHOOK_API_KEY")
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-USE_PROXY = os.getenv("USE_PROXY", False)
+# USE_PROXY: Set as string "True" or "False" in env vars
+USE_PROXY = os.getenv("USE_PROXY", "False") == "True"
 if DEBUG and USE_PROXY:
     os.environ["http_proxy"] = os.getenv(
         "HTTP_PROXY", "http://localhost:12334")
@@ -648,3 +651,6 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "hello@xblock.ai")
 # Maximum upload size in bytes (e.g., 50 MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
+
+# -- Ensure Django logging config is defined to avoid Cloud Run boot error --
+LOGGING_CONFIG = "logging.config.dictConfig"
