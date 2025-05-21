@@ -341,22 +341,22 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+        "level": "INFO", # Temporarily hardcoded
     },
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            "level": "INFO", # Temporarily hardcoded
             "propagate": False,
         },
         "django.request": {
             "handlers": ["console"],
-            "level": os.getenv("DJANGO_REQUEST_LOG_LEVEL", "WARNING"),
+            "level": "WARNING", # Temporarily hardcoded
             "propagate": False,
         },
         "django.db.backends": {
             "handlers": ["console"],
-            "level": os.getenv("DJANGO_DB_LOG_LEVEL", "ERROR"),
+            "level": "ERROR", # Temporarily hardcoded
             "propagate": False,
         },
     },
