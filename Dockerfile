@@ -28,3 +28,4 @@ COPY --from=builder /app /app
 RUN chmod +x ./entrypoint.sh
 EXPOSE 8080
 CMD ["./entrypoint.sh"]
+
