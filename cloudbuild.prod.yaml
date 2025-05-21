@@ -6,11 +6,17 @@ options:
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build image'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$SHORT_SHA', '.']
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$SHORT_SHA
+      - .
 
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Push image'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$SHORT_SHA']
+    args:
+      - push
+      - us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$SHORT_SHA
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'Deploy to Cloud Run'
@@ -26,7 +32,7 @@ steps:
       - --port=8080
       - --execution-environment=gen2
       - --service-account=backend-prod@xbrain-422617.iam.gserviceaccount.com
-      - --update-secrets=backend.env=backend-env:latest
+      - --update-secrets=/secrets/backend.env=backend-env:latest
 
 images:
   - us-central1-docker.pkg.dev/$PROJECT_ID/backend/backend:$SHORT_SHA
