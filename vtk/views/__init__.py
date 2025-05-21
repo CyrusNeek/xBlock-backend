@@ -1,2 +1,0 @@
-from .classmate_view import XClassmateViewSet, XClassmateQuizViewset, WhisperDataView , XClassmateToggleIsAddedXBrainView , XClassmateCategoryViewSet
-from .participant_viewset import ParticipantViewSet

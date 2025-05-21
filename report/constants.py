@@ -1,5 +1,0 @@
-
-
-
-
-CHUNK_LIMITS_TO_BUNDLE = 200 * 1024 * 1024
