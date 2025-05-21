@@ -21,11 +21,40 @@ fi
 
 # Debug Python path and env
 echo "🐍 PYTHONPATH: $PYTHONPATH"
-echo "🔧 DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
+# Explicitly set DJANGO_SETTINGS_MODULE for clarity and to ensure it's correct
+export DJANGO_SETTINGS_MODULE="xblock.settings"
+echo "🔧 Explicitly set DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
 
-# Manually run Django shell to catch error
-echo "🧪 Running isolated import check..."
-python -c "import django; django.setup(); from django.apps import apps; apps.populate(apps.app_configs)" || exit 1
+echo "🧪 Running isolated import check with settings.LOGGING print attempt..."
+# Prepare a Python command to print settings.LOGGING then run django.setup()
+# This helps diagnose if settings are loaded correctly and what LOGGING looks like.
+PYTHON_CMD="
+import os
+print('--- Attempting to print settings.LOGGING ---')
+try:
+    # DJANGO_SETTINGS_MODULE should be set in the environment by now
+    from django.conf import settings
+    import pprint
+    # Ensure LOGGING attribute exists before trying to print it
+    if hasattr(settings, 'LOGGING'):
+        print('settings.LOGGING content:')
+        pprint.pprint(settings.LOGGING)
+    else:
+        print('settings.LOGGING attribute not found.')
+except Exception as e:
+    print(f'Error accessing django.conf.settings or printing LOGGING: {e}')
+    print('Listing imported modules to check for django availability:')
+    import sys
+    pprint.pprint(sys.modules.keys())
+
+print('--- Proceeding with django.setup() ---')
+import django
+django.setup()
+from django.apps import apps
+apps.populate(apps.app_configs)
+"
+
+python -c "${PYTHON_CMD}" || exit 1
 
 # Continue if successful
 echo "✅ Django import check passed. Running migrations..."
