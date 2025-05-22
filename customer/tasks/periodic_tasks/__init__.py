@@ -1,0 +1,1 @@
+from .upload_customer_to_bucket import upload_customer_data_in_bucket

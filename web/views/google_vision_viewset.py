@@ -1,9 +1,22 @@
 import os
 import base64
+import json
+import tempfile
 from google.cloud import vision
 import re
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "xbrain_credential.json"
+# Handle Google credentials from environment variable if available
+gcp_credentials_json = os.getenv('GCP_CREDENTIALS')
+if gcp_credentials_json:
+    # Create a temporary file with the credentials
+    fd, temp_path = tempfile.mkstemp(suffix='.json')
+    with os.fdopen(fd, 'w') as tmp:
+        tmp.write(gcp_credentials_json)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
+else:
+    # Fallback for local development
+    credential_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'xbrain_credential.json')
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credential_path
 WORD = re.compile(r"\w+")
 PROJECT_ID = "xbrain-422617"
 LOCATION = "us-central1" 

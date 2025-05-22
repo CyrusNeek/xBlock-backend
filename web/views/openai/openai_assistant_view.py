@@ -984,16 +984,28 @@ def upload_chat_image(base64_image):
     return recording_file_url+filename
 
 def get_service_account_token():
-    
+    import os
+    import json
     from google.oauth2 import service_account
     from google.auth.transport.requests import Request
 
-    json_file_path = "xbrain_credential.json"
-
-    credentials = service_account.IDTokenCredentials.from_service_account_file(
-        json_file_path,
-        target_audience="https://xbrain-ai-923738140935.us-west1.run.app"
-    )
+    # Get credentials from environment variable
+    gcp_credentials_json = os.getenv('GCP_CREDENTIALS')
+    
+    if gcp_credentials_json:
+        # Use credentials from environment variable
+        service_account_info = json.loads(gcp_credentials_json)
+        credentials = service_account.IDTokenCredentials.from_service_account_info(
+            service_account_info,
+            target_audience="https://xbrain-ai-923738140935.us-west1.run.app"
+        )
+    else:
+        # Fallback for local development if needed
+        json_file_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'xbrain_credential.json')
+        credentials = service_account.IDTokenCredentials.from_service_account_file(
+            json_file_path,
+            target_audience="https://xbrain-ai-923738140935.us-west1.run.app"
+        )
 
     request = Request()
     credentials.refresh(request)
