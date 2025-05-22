@@ -45,3 +45,5 @@ selenium/*
 
 !selenium/.gitkeep
 firebase_credentials.json
+# GCP secret file (DO NOT COMMIT)
+web/views/openai/xbrain_credential.json
