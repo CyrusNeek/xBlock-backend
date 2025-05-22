@@ -34,9 +34,9 @@ steps:
       - '--max-instances'
       - '10'
       - '--update-secrets'
-      - 'SECRET_KEY=xblock-secret-key:latest,DATABASE_PASSWORD=xblock-db-password:latest,GCP_CREDENTIALS=xblock-gcp-credentials:latest,INTEGRATIONS_CREDENTIALS=xblock-integrations-credentials:latest,DEBUG=xblock-debug-flag:latest'
+      - 'SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug-flag:latest,GCP_CREDENTIALS=xblock-gcp-credentials:latest,INTEGRATIONS_CREDENTIALS=xblock-integrations-credentials:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,GOOGLE_APPLICATION_CREDENTIALS=xblock-gcp-credentials-path:latest'
       - '--set-env-vars'
-      - 'DATABASE_NAME=xblock,DATABASE_USER=xblock,DATABASE_HOST=db,DATABASE_PORT=5432,GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/gcp-credentials.json'
+      - 'PORT=8080'
 
 images:
   - 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'
