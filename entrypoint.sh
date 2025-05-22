@@ -12,6 +12,18 @@ if [ -z "$K_SERVICE" ]; then
     echo "Running in local environment"
 else
     echo "Running in Cloud Run environment with service: $K_SERVICE"
+    
+    # Create directory for credentials if it doesn't exist
+    mkdir -p /tmp/keys
+    
+    # Write GCP credentials to file if provided as environment variable
+    if [ ! -z "$GCP_CREDENTIALS" ]; then
+        echo "Writing GCP credentials to file..."
+        echo "$GCP_CREDENTIALS" > /tmp/keys/gcp-credentials.json
+        echo "GCP credentials written to /tmp/keys/gcp-credentials.json"
+    else
+        echo "WARNING: GCP_CREDENTIALS environment variable not set"
+    fi
 fi
 
 # Wait for database to be ready

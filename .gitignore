@@ -48,3 +48,12 @@ firebase_credentials.json
 # GCP secret files (DO NOT COMMIT)
 web/views/openai/xbrain_credential.json
 integrations_credential.json
+*credential*.json
+*credentials*.json
+*.key
+*.pem
+
+# Environment files
+.env
+.env.*
+!.env.sample
