@@ -27,4 +27,4 @@ def get_integration_service_account_token():
     credentials.refresh(request)
 
     token = credentials.token
-    return token 
+    return token
