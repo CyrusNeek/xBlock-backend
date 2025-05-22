@@ -7,7 +7,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
   
-  # Deploy container image to Cloud Run
+  # Deploy container image to Cloud Run with secrets
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -24,7 +24,7 @@ steps:
       - '--port'
       - '8080'
       - '--memory'
-      - '512Mi'
+      - '1Gi'
       - '--timeout'
       - '300s'
       - '--cpu'
@@ -33,6 +33,8 @@ steps:
       - '0'
       - '--max-instances'
       - '10'
+      - '--set-secrets'
+      - 'SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,REDIS_URL=xblock-redis-url:latest,AWS_STORAGE_BUCKET_NAME=xblock-aws-bucket-name:latest,AWS_REGION=xblock-aws-region:latest,AWS_ACCESS_KEY_ID=xblock-aws-access-key:latest,AWS_SECRET_ACCESS_KEY=xblock-aws-secret-key:latest,OPENAI_API_KEY=xblock-openai-api-key:latest,AZURE_SUBSCRIPTION_KEY=xblock-azure-subscription-key:latest,AZURE_SERVICE_REGION=xblock-azure-service-region:latest,QB_CLIENT_ID_PRODUCTION=xblock-qb-client-id-prod:latest,QB_CLIENT_SECRET_PRODUCTION=xblock-qb-client-secret-prod:latest,WEAVIATE_API_KEY=xblock-weaviate-api-key:latest,WEAVIATE_URL=xblock-weaviate-url:latest,STRIPE_WEBHOOK_API_KEY=xblock-stripe-webhook-key:latest,STRIPE_API_KEY=xblock-stripe-api-key:latest,STRIPE_SECRET_KEY=xblock-stripe-secret-key:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'

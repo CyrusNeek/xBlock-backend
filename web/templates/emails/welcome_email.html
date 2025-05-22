@@ -1,0 +1,25 @@
+<!-- templates/emails/welcome_email.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to xBlock</title>
+</head>
+<body>
+    <h1>Hi {{ user.first_name }} {{ user.last_name }}!</h1>
+    <p>
+        Welcome to xBlock! We're excited to have you on board. Here are your account details:
+    </p>
+    <ul>
+        <li>Email: {{ user.email }}</li>
+        <li>Password: {{ password }}</li>
+    </ul>
+    <p>
+        Please make sure to change your password after logging in for the first time.
+    </p>
+    <p>
+        Best regards,<br>
+        The Team
+    </p>
+</body>
+</html>
