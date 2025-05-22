@@ -35,8 +35,6 @@ steps:
       - '10'
       - '--update-secrets'
       - 'SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug-flag:latest,GCP_CREDENTIALS=xblock-gcp-credentials:latest,INTEGRATIONS_CREDENTIALS=xblock-integrations-credentials:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,GOOGLE_APPLICATION_CREDENTIALS=xblock-gcp-credentials-path:latest'
-      - '--set-env-vars'
-      - 'PORT=8080'
 
 images:
   - 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'
