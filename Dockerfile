@@ -24,9 +24,13 @@ RUN pip install --no-cache /wheels/*
 
 # Copy project
 COPY . .
+COPY entrypoint.sh /app/entrypoint.sh
 
 # Set permissions
 RUN chown -R app:app /app
+RUN chmod +x /app/entrypoint.sh
+
+# Switch to non-root user
 USER app
 
 # Set environment variables
@@ -38,6 +42,4 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 EXPOSE 8080
 
 # Run entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
