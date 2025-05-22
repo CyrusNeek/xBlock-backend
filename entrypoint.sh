@@ -1,19 +1,16 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
-# Apply database migrations (optional, but good practice)
-# For this minimal setup, we don't expect migrations, but the command can be included.
-# python manage.py migrate --noinput
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Apply database migrations
+python manage.py migrate --noinput
+
+# Collect static files
+python manage.py collectstatic --noinput
 
 # Start Gunicorn server
-# Use the PORT environment variable, default to 8080 if not set.
-# The --workers flag can be adjusted based on the Cloud Run instance's CPU.
-# For a minimal setup, 2-4 workers are usually fine.
-# Gunicorn should bind to 0.0.0.0 to be accessible from outside the container.
-gunicorn xblock.wsgi:application \
-    --bind "0.0.0.0:${PORT:-8080}" \
-    --workers 3 \
-    --log-level info \
-    --access-logfile '-' \
-    --error-logfile '-'
-
-echo "Entrypoint script finished."
+exec gunicorn xblock.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60
