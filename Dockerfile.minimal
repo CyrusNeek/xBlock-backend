@@ -1,0 +1,20 @@
+# Ultra minimal Dockerfile for Cloud Run debugging
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN pip install --no-cache-dir http-server
+
+# Copy only what's needed for the minimal test
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Expose port
+EXPOSE 8080
+
+# NOTE: Running as root for debugging purposes
+# In production, you should use a non-root user
+
+# Start the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
