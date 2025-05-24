@@ -55,6 +55,9 @@ ALLOWED_HOSTS = [
     "stage-front.xblock.ai",
     "studious-cod-jx7jr4jpv493jj7-8000.app.github.dev",
     "console.brain.xblock.ai",
+    "api.brain.xblock.ai",
+    "brain.xblock.ai",
+    "xblock-923738140935.us-central1.run.app",
 ]
 # SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -106,6 +109,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://192.168.70.253:3000",
     "https://effective-umbrella-ww5rv9rqwrxcgxxp-3000.app.github.dev",
     "https://console.brain.xblock.ai",
+    "https://brain.xblock.ai",
+    "https://api.brain.xblock.ai",
 ]
 
 CORS_ALLOW_METHODS = [
