@@ -10,7 +10,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
   
-  # First remove the problematic AWS, Azure, and Weaviate env vars
+  # First remove the problematic Weaviate env vars
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -24,7 +24,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--remove-env-vars'
-      - 'AWS_STORAGE_BUCKET_NAME,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZURE_SUBSCRIPTION_KEY,AZURE_SERVICE_REGION,WEAVIATE_API_KEY,WEAVIATE_URL'
+      - '--set-secrets=DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest'
+      - 'WEAVIATE_API_KEY,WEAVIATE_URL'
   
   # Then set up all the environment variables and secrets we need
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
