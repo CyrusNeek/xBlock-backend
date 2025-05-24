@@ -3,8 +3,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install minimal dependencies
-RUN pip install --no-cache-dir http-server
+# No additional dependencies needed - using Python's built-in libraries
 
 # Copy only what's needed for the minimal test
 COPY entrypoint.sh /app/entrypoint.sh
