@@ -54,6 +54,7 @@ ALLOWED_HOSTS = [
     "stage.xblock.ai",
     "stage-front.xblock.ai",
     "studious-cod-jx7jr4jpv493jj7-8000.app.github.dev",
+    "console.brain.xblock.ai",
 ]
 # SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -104,6 +105,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://stage-front.xblock.ai",
     "http://192.168.70.253:3000",
     "https://effective-umbrella-ww5rv9rqwrxcgxxp-3000.app.github.dev",
+    "https://console.brain.xblock.ai",
 ]
 
 CORS_ALLOW_METHODS = [
@@ -180,7 +182,14 @@ STORAGES = {
 S3_UNIT_FILE_FOLDER = "unit-file"
 S3_MEETING_RECORDING_FOLDER = "meetings"
 
-ROOT_URLCONF = "xblock.urls"
+# Check if we're in console mode (admin-only interface)
+CONSOLE_MODE = os.getenv("CONSOLE_MODE", "").lower() == "true"
+
+# Set the URL configuration based on console mode
+if CONSOLE_MODE:
+    ROOT_URLCONF = "xblock.console_urls"
+else:
+    ROOT_URLCONF = "xblock.urls"
 
 TEMPLATES = [
     {
