@@ -38,5 +38,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # NOTE: Running as root for Cloud Run
-# Start the entrypoint script
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Use CMD instead of ENTRYPOINT to avoid entrypoint.sh issues
+
+# Create a startup script directly in the Dockerfile
+RUN echo '#!/bin/bash\n\
+echo "Starting application directly from CMD"\n\
+export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-xblock.settings.production}\n\
+echo "Using Django settings module: $DJANGO_SETTINGS_MODULE"\n\
+export PORT=${PORT:-8080}\n\
+echo "Using PORT: $PORT"\n\
+python manage.py collectstatic --noinput || echo "collectstatic failed"\n\
+python manage.py migrate || echo "migrate failed"\n\
+exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 300 --log-level=info\n\
+' > /app/start.sh \
+    && chmod +x /app/start.sh \
+    && cat /app/start.sh
+
+# Use CMD instead of ENTRYPOINT
+CMD ["/bin/bash", "/app/start.sh"]
