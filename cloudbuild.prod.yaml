@@ -23,9 +23,8 @@ steps:
       - 'us-central1'
       - '--platform'
       - 'managed'
-      - '--remove-env-vars'
+      - '--remove-env-vars=WEAVIATE_API_KEY,WEAVIATE_URL'
       - '--set-secrets=DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest'
-      - 'WEAVIATE_API_KEY,WEAVIATE_URL'
   
   # Then set up all the environment variables and secrets we need
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
