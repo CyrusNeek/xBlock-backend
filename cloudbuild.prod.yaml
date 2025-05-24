@@ -2,9 +2,9 @@
 
 # Build steps to execute
 steps:
-  # Build the container image
+  # Build the container image using the debug Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA', '.']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA', '-f', 'Dockerfile.debug', '.']
   
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'

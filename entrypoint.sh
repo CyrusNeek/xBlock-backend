@@ -1,75 +1,51 @@
 #!/bin/bash
-# Ultra-simple entrypoint for debugging Cloud Run startup
 
-# Ensure we continue even if commands fail
-set +e
+# This is an absolute minimal entrypoint for Cloud Run debugging
+echo "DEBUG: Starting minimal entrypoint script"
+echo "DEBUG: PORT=$PORT"
+echo "DEBUG: User=$(whoami)"
+echo "DEBUG: Current directory=$(pwd)"
+echo "DEBUG: Directory contents=$(ls -la)"
 
-# Make sure we can see what's happening
-echo "================ STARTING CONTAINER ================" 
-echo "Current directory: $(pwd)"
-echo "User: $(whoami)"
-echo "PORT environment variable: $PORT"
-
-# Create the absolute simplest HTTP server possible
-echo "Creating minimal HTTP server..."
-cat > minimal_server.py << 'EOF'
-#!/usr/bin/env python3
-import os
+# Create a simple Python socket server that just binds to PORT
+cat > server.py << 'EOF'
 import socket
-import sys
+import os
+import time
 
-# Get port from environment with fallback to 8080
+print("Python server starting")
+
+# Get the port from environment variable
 port = int(os.environ.get("PORT", 8080))
+print(f"Using port: {port}")
 
-# Create a TCP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# Create socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-# Allow reuse of the address
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# Bind to all interfaces on the specified port
+print(f"Binding to 0.0.0.0:{port}")
+s.bind(("0.0.0.0", port))
 
-try:
-    # Bind to all interfaces on the specified port
-    sock.bind(("0.0.0.0", port))
-    print(f"Successfully bound to port {port}")
+# Listen for connections
+print("Listening for connections")
+s.listen(1)
+
+while True:
+    print("Waiting for a connection")
+    connection, client_address = s.accept()
     
-    # Start listening
-    sock.listen(5)
-    print(f"Server is listening on port {port}")
-    
-    print("Ready for connections")
-    
-    # Main server loop
-    while True:
-        # Accept a connection
-        client, addr = sock.accept()
-        print(f"Connection from {addr}")
+    try:
+        print(f"Connection from {client_address}")
         
-        try:
-            # Read the request (but we don't need to parse it for this test)
-            data = client.recv(1024)
-            
-            # Basic HTTP response
-            response = b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"
-            response += b"<html><body><h1>Cloud Run Debug Server</h1>"
-            response += b"<p>Container is running!</p>"
-            response += b"<p>This confirms the container can bind to the port.</p>"
-            response += b"</body></html>"
-            
-            # Send the response
-            client.sendall(response)
-        except Exception as e:
-            print(f"Error handling request: {e}")
-        finally:
-            # Close the connection
-            client.close()
-            
-except Exception as e:
-    print(f"ERROR: {e}", file=sys.stderr)
-    sys.exit(1)
+        # Send a simple HTTP response
+        response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nServer is running!\n"
+        connection.sendall(response.encode('utf-8'))
+    finally:
+        # Clean up the connection
+        connection.close()
 EOF
 
-# Make it executable
-chmod +x minimal_server.py
-
 # Run the server
-python minimal_server.py
+echo "DEBUG: Starting Python server"
+exec python server.py

@@ -1,0 +1,21 @@
+# Debug Dockerfile for Cloud Run troubleshooting
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN pip install --no-cache-dir gunicorn
+
+# Copy just the entrypoint
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Expose port
+EXPOSE 8080
+
+# Run as root for debugging
+# Note: This is only for debugging, normally you'd use a non-root user for security
+ENTRYPOINT ["/app/entrypoint.sh"]
