@@ -23,7 +23,6 @@ steps:
       - 'us-central1'
       - '--platform'
       - 'managed'
-      - '--remove-env-vars=WEAVIATE_API_KEY,WEAVIATE_URL'
       - '--set-env-vars=DJANGO_SETTINGS_MODULE=xblock.settings.production'
       - '--set-secrets=SECRET_KEY=xblock-secret-key:latest'
   
