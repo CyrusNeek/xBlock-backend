@@ -10,7 +10,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
   
-  # First step: Clear existing environment variables and secrets
+  # Deploy to Cloud Run - Skip specific env var configuration and let entrypoint.sh handle it
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -23,23 +23,6 @@ steps:
       - 'us-central1'
       - '--platform'
       - 'managed'
-      - '--clear-secrets=DJANGO_SETTINGS_MODULE'
-      - '--clear-env-vars=DJANGO_SETTINGS_MODULE'
-  
-  # Second step: Set the Django settings module as an environment variable
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'xblock'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--set-env-vars=DJANGO_SETTINGS_MODULE=xblock.settings.production'
   
   # Then set up all the environment variables and secrets we need
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
