@@ -1,20 +1,18 @@
 #!/bin/bash
-# Fixed line endings for Linux container (LF not CRLF)
+set -e
+set -x  # for debug logging
 
-set -x  # Show each command
+# Optional: wait for DB to be ready
+python manage.py wait_for_db || echo "Database not ready, continuing..."
 
-echo "DEBUG: Starting container"
-echo "PORT: $PORT"
+# Collect static files
+python manage.py collectstatic --noinput || echo "collectstatic failed"
 
-# Dummy server that binds to $PORT
-# This confirms that the container listens properly
-echo "Starting test Python server on $PORT"
+# Apply migrations
+python manage.py migrate || echo "migrate failed"
 
-# Check if python3 command exists, otherwise use python
-if command -v python3 &> /dev/null; then
-    echo "Using python3 command"
-    python3 -m http.server "$PORT"
-else
-    echo "Using python command"
-    python -m http.server "$PORT"
-fi
+# Start Gunicorn server
+exec gunicorn xblock.wsgi:application \
+    --bind 0.0.0.0:$PORT \
+    --workers 3 \
+    --log-level=info
