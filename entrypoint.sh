@@ -1,76 +1,42 @@
 #!/bin/bash
-# Enable command echoing for debugging
+# Very simple entrypoint for debugging Cloud Run startup
 set -e
-set -x
 
-# Print environment (without passwords)
+# Print all environment variables (excluding sensitive ones)
 echo "============ ENVIRONMENT VARIABLES ============"
 env | grep -v -E 'PASSWORD|SECRET|KEY' | sort
 
-# Load environment variables from .env file if it exists (for local development)
-if [ -f .env ]; then
-    echo "Loading environment variables from .env file..."
-    export $(grep -v '^#' .env | xargs)
-fi
+# Create a simple HTTP server that responds on port 8080
+echo "Starting a simple HTTP server on port ${PORT:-8080}"
 
-# Check if we're running in Cloud Run (environment variables will be set via Secret Manager)
-if [ -z "$K_SERVICE" ]; then
-    echo "Running in local environment"
-else
-    echo "Running in Cloud Run environment with service: $K_SERVICE"
-    
-    # Create directory for credentials if it doesn't exist
-    mkdir -p /tmp/keys
-    
-    # Write GCP credentials to file if provided as environment variable
-    if [ ! -z "$GCP_CREDENTIALS" ]; then
-        echo "Writing GCP credentials to file..."
-        echo "$GCP_CREDENTIALS" > /tmp/keys/gcp-credentials.json
-        echo "GCP credentials written to /tmp/keys/gcp-credentials.json"
-    else
-        echo "WARNING: GCP_CREDENTIALS environment variable not set"
-    fi
-fi
+# First check if Python is working
+echo "Python version:"
+python --version
 
-# Wait for database to be ready
-echo "Waiting for database connection..."
-MAX_RETRIES=20
-COUNT=0
+# Write a simple HTTP server in Python
+cat > simple_server.py << 'EOF'
+import http.server
+import socketserver
+import os
 
-# Debug database connection parameters (without showing the password)
-echo "Database connection parameters:"
-echo "  HOST: $DATABASE_HOST"
-echo "  PORT: $DATABASE_PORT"
-echo "  NAME: $DATABASE_NAME"
-echo "  USER: $DATABASE_USER"
-until python -c "import psycopg2; print('Attempting to connect to database...'); conn = psycopg2.connect(host='$DATABASE_HOST', port='$DATABASE_PORT', dbname='$DATABASE_NAME', user='$DATABASE_USER', password='$DATABASE_PASSWORD'); print('Connection successful!'); conn.close()"; do
-    COUNT=$((COUNT+1))
-    if [ $COUNT -ge $MAX_RETRIES ]; then
-        echo "Could not connect to database after $MAX_RETRIES attempts. Exiting."
-        exit 1
-    fi
-    echo "Database connection attempt $COUNT of $MAX_RETRIES failed. Retrying in 5 seconds..."
-    sleep 5
-done
-echo "Database connection successful!"
+PORT = int(os.environ.get('PORT', 8080))
 
-# Apply database migrations
-echo "Applying database migrations..."
-python manage.py migrate --noinput || { echo "Migration failed!"; exit 1; }
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b"<html><body><h1>Debug Server Running</h1><pre>")
+        self.wfile.write(b"Environment Variables:\n")
+        for k, v in os.environ.items():
+            if not any(secret in k.lower() for secret in ['password', 'secret', 'key']):
+                self.wfile.write(f"{k}={v}\n".encode())
+        self.wfile.write(b"</pre></body></html>")
 
-# Collect static files
-echo "Collecting static files..."
-python manage.py collectstatic --noinput || { echo "Collectstatic failed!"; exit 1; }
+with socketserver.TCPServer(("", PORT), Handler) as httpd:
+    print(f"Serving at port {PORT}")
+    httpd.serve_forever()
+EOF
 
-# Check if wsgi.py exists
-echo "Checking for wsgi.py..."
-if [ ! -f "xblock/wsgi.py" ]; then
-    echo "ERROR: wsgi.py not found at xblock/wsgi.py"
-    find . -name "wsgi.py" -type f
-    exit 1
-fi
-
-# Start Gunicorn server
-echo "Starting Gunicorn server..."
-echo "Using PORT=${PORT:-8080}"
-exec gunicorn xblock.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60 --log-level debug
+# Run the simple server
+exec python simple_server.py
