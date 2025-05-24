@@ -1,5 +1,11 @@
 #!/bin/bash
+# Enable command echoing for debugging
 set -e
+set -x
+
+# Print environment (without passwords)
+echo "============ ENVIRONMENT VARIABLES ============"
+env | grep -v -E 'PASSWORD|SECRET|KEY' | sort
 
 # Load environment variables from .env file if it exists (for local development)
 if [ -f .env ]; then
@@ -28,9 +34,16 @@ fi
 
 # Wait for database to be ready
 echo "Waiting for database connection..."
-MAX_RETRIES=10
+MAX_RETRIES=20
 COUNT=0
-until python -c "import psycopg2; psycopg2.connect(host='$DATABASE_HOST', port='$DATABASE_PORT', dbname='$DATABASE_NAME', user='$DATABASE_USER', password='$DATABASE_PASSWORD')" 2>/dev/null; do
+
+# Debug database connection parameters (without showing the password)
+echo "Database connection parameters:"
+echo "  HOST: $DATABASE_HOST"
+echo "  PORT: $DATABASE_PORT"
+echo "  NAME: $DATABASE_NAME"
+echo "  USER: $DATABASE_USER"
+until python -c "import psycopg2; print('Attempting to connect to database...'); conn = psycopg2.connect(host='$DATABASE_HOST', port='$DATABASE_PORT', dbname='$DATABASE_NAME', user='$DATABASE_USER', password='$DATABASE_PASSWORD'); print('Connection successful!'); conn.close()"; do
     COUNT=$((COUNT+1))
     if [ $COUNT -ge $MAX_RETRIES ]; then
         echo "Could not connect to database after $MAX_RETRIES attempts. Exiting."
@@ -43,12 +56,21 @@ echo "Database connection successful!"
 
 # Apply database migrations
 echo "Applying database migrations..."
-python manage.py migrate --noinput
+python manage.py migrate --noinput || { echo "Migration failed!"; exit 1; }
 
 # Collect static files
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput || { echo "Collectstatic failed!"; exit 1; }
+
+# Check if wsgi.py exists
+echo "Checking for wsgi.py..."
+if [ ! -f "xblock/wsgi.py" ]; then
+    echo "ERROR: wsgi.py not found at xblock/wsgi.py"
+    find . -name "wsgi.py" -type f
+    exit 1
+fi
 
 # Start Gunicorn server
 echo "Starting Gunicorn server..."
-exec gunicorn xblock.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60
+echo "Using PORT=${PORT:-8080}"
+exec gunicorn xblock.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 60 --log-level debug
