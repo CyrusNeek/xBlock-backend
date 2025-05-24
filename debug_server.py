@@ -1,112 +1,58 @@
 """
-Debug server for xBlock backend.
+Secure API server for xBlock backend.
 This server is used as a fallback when Django fails to start.
-It provides basic diagnostic information without exposing sensitive data.
+It provides a secure API response without exposing any sensitive data.
 """
 
 import os
 import sys
-import platform
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import socket
 import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
-class DebugHandler(BaseHTTPRequestHandler):
+class SecureAPIHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        # Set secure headers
+        self.send_response(503)  # Service Unavailable
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('Content-Security-Policy', "default-src 'none'")
+        self.send_header('Access-Control-Allow-Origin', 'https://brain.xblock.ai')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.end_headers()
         
-        html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>xBlock Debug Information</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                h1 { color: #333; }
-                h2 { color: #666; margin-top: 20px; }
-                pre { background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
-                .error { color: red; }
-                .warning { color: orange; }
-            </style>
-        </head>
-        <body>
-            <h1>xBlock Debug Information</h1>
-            
-            <h2>Environment Variables</h2>
-            <pre>
-            """
+        # Return a secure error message as JSON
+        response = {
+            'status': 'error',
+            'message': 'API service temporarily unavailable',
+            'details': 'The API is currently in maintenance mode. Please try again later.',
+            'support': 'contact@xblock.ai'
+        }
         
-        # For security reasons, we don't show any environment variables in production
-        html += "Environment variables are not displayed for security reasons.\n"
-        html += "If you need to debug environment variables, please check the logs or contact the administrator.\n"
+        self.wfile.write(json.dumps(response).encode())
+    
+    def do_OPTIONS(self):
+        # Handle CORS preflight requests
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', 'https://brain.xblock.ai')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('Access-Control-Max-Age', '86400')  # 24 hours
+        self.end_headers()
         
-        # Only show the count of environment variables
-        env_count = len(os.environ)
-        html += f"\nTotal environment variables: {env_count}\n"
-        
-        html += """
-            </pre>
-            
-            <h2>System Information</h2>
-            <pre>
-Python version: {python_version}
-Platform: {platform}
-Current directory: {cwd}
-Directory contents: {dir_contents}
-            </pre>
-            
-            <h2>Django Check</h2>
-            <pre>
-            """
-        
-        try:
-            import django
-            html += f"Django version: {django.get_version()}\n"
-            
-            try:
-                from django.conf import settings
-                if settings.configured:
-                    html += "Django settings are configured\n"
-                    html += f"DEBUG setting: {settings.DEBUG}\n"
-                    html += f"ALLOWED_HOSTS: {settings.ALLOWED_HOSTS}\n"
-                else:
-                    html += "<span class='error'>Django settings are not configured</span>\n"
-            except Exception as e:
-                html += f"<span class='error'>Error checking Django settings: {str(e)}</span>\n"
-                
-        except ImportError:
-            html += "<span class='error'>Django is not installed</span>\n"
-        
-        html += """
-            </pre>
-            
-            <h2>Network Information</h2>
-            <pre>
-Hostname: {hostname}
-            </pre>
-            
-            <p>This is a debug page. If you're seeing this in production, something is wrong with the application configuration.</p>
-        </body>
-        </html>
-        """
-        
-        # Format the HTML with actual values
-        formatted_html = html.format(
-            python_version=sys.version,
-            platform=platform.platform(),
-            cwd=os.getcwd(),
-            dir_contents=str(os.listdir('.')),
-            hostname=socket.gethostname()
-        )
-        
-        self.wfile.write(formatted_html.encode())
+    def log_message(self, format, *args):
+        # Customize logging to avoid exposing sensitive information
+        sys.stderr.write("[%s] %s - %s\n" % (
+            self.log_date_time_string(),
+            self.address_string(),
+            format % args
+        ))
 
 def run_debug_server(port=8080):
     server_address = ('', port)
-    httpd = HTTPServer(server_address, DebugHandler)
-    print(f"Starting debug server on port {port}...")
+    httpd = HTTPServer(server_address, SecureAPIHandler)
+    print(f"Starting secure API server on port {port}...")
     httpd.serve_forever()
 
 if __name__ == "__main__":
