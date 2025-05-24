@@ -41,7 +41,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Use CMD instead of ENTRYPOINT to avoid entrypoint.sh issues
 
 # Create a simple startup script that uses our secure debug server if Django fails
-COPY debug_server.py /app/debug_server.py
 RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'echo "Starting application directly from CMD"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
@@ -62,8 +61,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '  echo "Django settings loaded successfully, starting Gunicorn"' >> /app/start.sh && \
     echo '  exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 300 --log-level=info' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
-    echo '  echo "Django settings failed to load, starting secure API server"' >> /app/start.sh && \
-    echo '  python debug_server.py' >> /app/start.sh && \
+    echo '  echo "CRITICAL: Django settings failed to load. Application cannot start." >&2' >> /app/start.sh && \
+    echo '  exit 1' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     chmod +x /app/start.sh
 

@@ -32,16 +32,14 @@ python manage.py migrate || echo "migrate failed"
 # Validate Django settings before starting server
 python -c "import django; django.setup(); from django.conf import settings; print(f'Django settings loaded successfully. DEBUG={settings.DEBUG}')" || echo "Django settings validation failed"
 
-# Start debug server if Django settings validation failed
-if ! python -c "import django; django.setup(); from django.conf import settings; print('Settings OK')" 2>/dev/null; then
-    echo "Django settings failed to load, starting debug server"
-    python debug_server.py
-else
-    # Start Gunicorn server
-    echo "Starting Gunicorn server"
-    exec gunicorn xblock.wsgi:application \
-        --bind 0.0.0.0:$PORT \
-        --workers 3 \
-        --timeout 300 \
-        --log-level=info
-fi
+# Start Gunicorn server
+echo "Attempting to start Gunicorn server..."
+exec gunicorn xblock.wsgi:application \
+    --bind 0.0.0.0:$PORT \
+    --workers 3 \
+    --timeout 300 \
+    --log-level=info
+
+# If exec gunicorn fails (e.g., Django settings are wrong), the container will exit.
+# This is the desired behavior to prevent running an insecure or broken app.
+echo "Gunicorn execution finished or failed. Container will now exit."
