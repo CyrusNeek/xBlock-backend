@@ -10,20 +10,6 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
   
-  # Deploy to Cloud Run - Skip specific env var configuration and let entrypoint.sh handle it
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'xblock'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-  
   # Then set up all the environment variables and secrets we need
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -52,7 +38,7 @@ steps:
       - '10'
       # No environment variables needed as they're set by Cloud Run or in secrets
       - '--update-secrets'
-      - 'SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug-flag:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,CONSTANCE_REDIS_CONNECTION=xblock-constance-redis:latest,CELERY_BROKER_URL=xblock-celery-broker:latest,REDBEAT_REDIS_URL=xblock-redbeat-redis:latest,CELERY_RESULT_BACKEND=xblock-celery-result:latest,REDIS_URL=xblock-redis-url:latest,OPENAI_API_KEY=xblock-openai-key:latest,QB_CLIENT_ID_PRODUCTION=xblock-qb-client-id:latest,QB_CLIENT_SECRET_PRODUCTION=xblock-qb-client-secret:latest,WHISPER_BASE_URL=xblock-whisper-url:latest,WHISPER_API_KEY=xblock-whisper-key:latest,DEFAULT_FROM_EMAIL=xblock-default-email:latest,SENDGRID_API_KEY=xblock-sendgrid-key:latest,STRIPE_API_KEY=xblock-stripe-api-key:latest,STRIPE_SECRET_KEY=xblock-stripe-secret-key:latest,STRIPE_WEBHOOK_API_KEY=xblock-stripe-webhook-key:latest,GCP_BUCKET_NAME=xblock-gcp-bucket:latest,GOOGLE_APPLICATION_CREDENTIALS=xblock-google-creds-path:latest,GOOGLE_OAUTH_CLIENT_ID=xblock-google-oauth-client-id:latest,GOOGLE_OAUTH_CLIENT_SECRET=xblock-google-oauth-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=xblock-google-oauth-callback:latest,INTEGRATIONS_CREDENTIALS=xblock-integrations-credentials:latest'
+      - 'DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest,SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug-flag:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,CONSTANCE_REDIS_CONNECTION=xblock-constance-redis:latest,CELERY_BROKER_URL=xblock-celery-broker:latest,REDBEAT_REDIS_URL=xblock-redbeat-redis:latest,CELERY_RESULT_BACKEND=xblock-celery-result:latest,REDIS_URL=xblock-redis-url:latest,OPENAI_API_KEY=xblock-openai-key:latest,QB_CLIENT_ID_PRODUCTION=xblock-qb-client-id:latest,QB_CLIENT_SECRET_PRODUCTION=xblock-qb-client-secret:latest,WHISPER_BASE_URL=xblock-whisper-url:latest,WHISPER_API_KEY=xblock-whisper-key:latest,DEFAULT_FROM_EMAIL=xblock-default-email:latest,SENDGRID_API_KEY=xblock-sendgrid-key:latest,STRIPE_API_KEY=xblock-stripe-api-key:latest,STRIPE_SECRET_KEY=xblock-stripe-secret-key:latest,STRIPE_WEBHOOK_API_KEY=xblock-stripe-webhook-key:latest,GCP_BUCKET_NAME=xblock-gcp-bucket:latest,GOOGLE_APPLICATION_CREDENTIALS=xblock-google-creds-path:latest,GOOGLE_OAUTH_CLIENT_ID=xblock-google-oauth-client-id:latest,GOOGLE_OAUTH_CLIENT_SECRET=xblock-google-oauth-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=xblock-google-oauth-callback:latest,INTEGRATIONS_CREDENTIALS=xblock-integrations-credentials:latest'
 images:
   - 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'
 
