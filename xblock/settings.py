@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+import json
 from datetime import timedelta
 from corsheaders.defaults import default_headers
 from celery.schedules import crontab
@@ -231,19 +232,28 @@ SELENIUM_3_REMOTE_URL = "http://selenium_3:4444/wd/hub"
 
 MS_TEAMS_SELENIUM_CHANNEL_URL = "https://xblockai.webhook.office.com/webhookb2/19415de3-12e5-4910-8459-716acbc0d608@f6749743-df11-4ef2-8188-21b5a38c8983/IncomingWebhook/53f8d844e0a1424c8be2142e16d0dd22/d7c6658e-aa92-47d8-964f-0eeb642beca1"
 
-# AWS Key
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-AWS_REGION = os.getenv("AWS_REGION")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# AWS Key - Optional, can be provided via INTEGRATIONS_CREDENTIALS
+# Load integration credentials if available
+INTEGRATIONS_CREDENTIALS = {}
+if os.getenv("INTEGRATIONS_CREDENTIALS"):
+    try:
+        INTEGRATIONS_CREDENTIALS = json.loads(os.getenv("INTEGRATIONS_CREDENTIALS"))
+    except json.JSONDecodeError:
+        print("Warning: Could not parse INTEGRATIONS_CREDENTIALS as JSON")
+
+# AWS settings from either direct env vars or integrations credentials
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME") or INTEGRATIONS_CREDENTIALS.get("aws", {}).get("bucket_name")
+AWS_REGION = os.getenv("AWS_REGION") or INTEGRATIONS_CREDENTIALS.get("aws", {}).get("region")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID") or INTEGRATIONS_CREDENTIALS.get("aws", {}).get("access_key_id")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY") or INTEGRATIONS_CREDENTIALS.get("aws", {}).get("secret_access_key")
 
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_GUEST_ASSISTANT_ID = "asst_z8TR5QAWIMJgvGcxt7vG5iVG"
 
-# Azure Speech Services
-AZURE_SUBSCRIPTION_KEY = os.getenv("AZURE_SUBSCRIPTION_KEY")
-AZURE_SERVICE_REGION = os.getenv("AZURE_SERVICE_REGION")
+# Azure Speech Services - Optional, can be provided via INTEGRATIONS_CREDENTIALS
+AZURE_SUBSCRIPTION_KEY = os.getenv("AZURE_SUBSCRIPTION_KEY") or INTEGRATIONS_CREDENTIALS.get("azure", {}).get("subscription_key")
+AZURE_SERVICE_REGION = os.getenv("AZURE_SERVICE_REGION") or INTEGRATIONS_CREDENTIALS.get("azure", {}).get("service_region")
 
 # Quickbooks
 QB_CLIENT_ID = (
@@ -421,9 +431,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "web.tasks.periodic_tasks.update_assistant_time.task_update_assistant_instruction",
         "schedule": timedelta(minutes=5),
     },
+    # Weaviate task only runs if Weaviate credentials are configured
     "task_upload_data_to_weaviate":{
         "task": "web.tasks.periodic_tasks.upload_weaviate.upload_data_to_weaviate",
-        "schedule": crontab(minute=0, hour="*/3"),
+        "schedule": crontab(minute=0, hour="*/3") if WEAVIATE_API_KEY and WEAVIATE_URL else crontab(minute=0, hour=0),  # Run at midnight if not configured
     },
     "task_update_toast_report": {
         "task": "report.tasks.periodic.toast.toast_crawler.task_fetch_toasts_data",
@@ -587,8 +598,9 @@ VERBA_PASSWORD = os.getenv("VERBA_PASSWORD")
 VERBA_API_WEBSOCKET = os.getenv("VERBA_API_WEBSOCKET")
 
 
-WEAVIATE_API_KEY = os.getenv("WEAVIATE_API_KEY")
-WEAVIATE_URL = os.getenv("WEAVIATE_URL")
+# Weaviate settings - Optional, can be provided via INTEGRATIONS_CREDENTIALS
+WEAVIATE_API_KEY = os.getenv("WEAVIATE_API_KEY") or INTEGRATIONS_CREDENTIALS.get("weaviate", {}).get("api_key")
+WEAVIATE_URL = os.getenv("WEAVIATE_URL") or INTEGRATIONS_CREDENTIALS.get("weaviate", {}).get("url")
 
 GOOGLE_OATH_CALLBACK_URL = os.getenv("GOOGLE_OATH_CALLBACK_URL")
 
