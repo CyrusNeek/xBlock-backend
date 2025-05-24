@@ -1,51 +1,81 @@
 #!/bin/bash
+set -e
 
-# This is an absolute minimal entrypoint for Cloud Run debugging
-echo "DEBUG: Starting minimal entrypoint script"
-echo "DEBUG: PORT=$PORT"
-echo "DEBUG: User=$(whoami)"
-echo "DEBUG: Current directory=$(pwd)"
-echo "DEBUG: Directory contents=$(ls -la)"
+# Enable command tracing for debugging
+set -x
 
-# Create a simple Python socket server that just binds to PORT
-cat > server.py << 'EOF'
-import socket
-import os
-import time
+# Print environment (without passwords)
+echo "============ ENVIRONMENT VARIABLES ============"
+env | grep -v -E 'PASSWORD|SECRET|KEY' | sort
 
-print("Python server starting")
+# Load environment variables from .env file if it exists (for local development)
+if [ -f .env ]; then
+    echo "Loading environment variables from .env file..."
+    export $(grep -v '^#' .env | xargs)
+fi
 
-# Get the port from environment variable
-port = int(os.environ.get("PORT", 8080))
-print(f"Using port: {port}")
-
-# Create socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-# Bind to all interfaces on the specified port
-print(f"Binding to 0.0.0.0:{port}")
-s.bind(("0.0.0.0", port))
-
-# Listen for connections
-print("Listening for connections")
-s.listen(1)
-
-while True:
-    print("Waiting for a connection")
-    connection, client_address = s.accept()
+# Check if we're running in Cloud Run
+if [ ! -z "$K_SERVICE" ]; then
+    echo "Running in Cloud Run environment with service: $K_SERVICE"
     
-    try:
-        print(f"Connection from {client_address}")
-        
-        # Send a simple HTTP response
-        response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nServer is running!\n"
-        connection.sendall(response.encode('utf-8'))
-    finally:
-        # Clean up the connection
-        connection.close()
-EOF
+    # Create directory for credentials if it doesn't exist
+    mkdir -p /tmp/keys
+    
+    # Write GCP credentials to file if provided as environment variable
+    if [ ! -z "$GCP_CREDENTIALS" ]; then
+        echo "Writing GCP credentials to file..."
+        echo "$GCP_CREDENTIALS" > /tmp/keys/gcp-credentials.json
+        echo "GCP credentials written to /tmp/keys/gcp-credentials.json"
+    fi
+fi
 
-# Run the server
-echo "DEBUG: Starting Python server"
-exec python server.py
+# Wait for database to be ready
+echo "Waiting for database connection..."
+MAX_RETRIES=10
+COUNT=0
+
+until python -c "import psycopg2; conn = psycopg2.connect(host='$DATABASE_HOST', port='$DATABASE_PORT', dbname='$DATABASE_NAME', user='$DATABASE_USER', password='$DATABASE_PASSWORD'); conn.close()" || [ $COUNT -eq $MAX_RETRIES ]; do
+    COUNT=$((COUNT+1))
+    if [ $COUNT -eq $MAX_RETRIES ]; then
+        echo "Could not connect to database after $MAX_RETRIES attempts. Starting server anyway..."
+        break
+    fi
+    echo "Database connection attempt $COUNT of $MAX_RETRIES failed. Retrying in 5 seconds..."
+    sleep 5
+done
+
+# Collect static files
+echo "Collecting static files..."
+python manage.py collectstatic --noinput || echo "Static files collection failed, but continuing..."
+
+# Apply database migrations if database is available
+if [ $COUNT -lt $MAX_RETRIES ]; then
+    echo "Applying database migrations..."
+    python manage.py migrate --noinput || echo "Migration failed, but continuing..."
+fi
+
+# Check for WSGI file
+echo "Checking for WSGI file..."
+WSGI_PATH="xblock.wsgi:application"
+if [ ! -f "xblock/wsgi.py" ]; then
+    echo "WARNING: wsgi.py not found at xblock/wsgi.py"
+    # Try to find it elsewhere
+    WSGI_FILE=$(find . -name "wsgi.py" -type f | head -1)
+    if [ -z "$WSGI_FILE" ]; then
+        echo "ERROR: No wsgi.py file found in the project"
+        exit 1
+    else
+        # Convert path like ./config/wsgi.py to config.wsgi:application
+        WSGI_PATH=$(echo $WSGI_FILE | sed 's/^\.\/\(.*\)\/wsgi\.py$/\1.wsgi:application/')
+        echo "Found WSGI file at $WSGI_FILE, using $WSGI_PATH"
+    fi
+fi
+
+# Start Gunicorn server
+echo "Starting Gunicorn server on port ${PORT:-8080} with WSGI path $WSGI_PATH"
+exec gunicorn $WSGI_PATH \
+    --bind 0.0.0.0:${PORT:-8080} \
+    --workers 3 \
+    --threads 8 \
+    --timeout 120 \
+    --log-level debug
