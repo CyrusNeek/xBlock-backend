@@ -1,124 +1,75 @@
 #!/bin/bash
-# Phased entrypoint script for debugging Cloud Run startup
-set -e
-set -x  # Enable command tracing for debugging
+# Ultra-simple entrypoint for debugging Cloud Run startup
 
-# Print all environment variables (excluding sensitive ones)
-echo "============ ENVIRONMENT VARIABLES ============"
-env | grep -v -E 'PASSWORD|SECRET|KEY' | sort
+# Ensure we continue even if commands fail
+set +e
 
-# Load environment variables from .env file if it exists (for local development)
-if [ -f .env ]; then
-    echo "Loading environment variables from .env file..."
-    export $(grep -v '^#' .env | xargs)
-fi
+# Make sure we can see what's happening
+echo "================ STARTING CONTAINER ================" 
+echo "Current directory: $(pwd)"
+echo "User: $(whoami)"
+echo "PORT environment variable: $PORT"
 
-# Check if we're running in Cloud Run (environment variables will be set via Secret Manager)
-if [ -z "$K_SERVICE" ]; then
-    echo "Running in local environment"
-else
-    echo "Running in Cloud Run environment with service: $K_SERVICE"
-    
-    # Create directory for credentials if it doesn't exist
-    mkdir -p /tmp/keys
-    
-    # Write GCP credentials to file if provided as environment variable
-    if [ ! -z "$GCP_CREDENTIALS" ]; then
-        echo "Writing GCP credentials to file..."
-        echo "$GCP_CREDENTIALS" > /tmp/keys/gcp-credentials.json
-        echo "GCP credentials written to /tmp/keys/gcp-credentials.json"
-    else
-        echo "WARNING: GCP_CREDENTIALS environment variable not set"
-    fi
-fi
-
-# Check for basic file existence
-echo "Checking for essential files..."
-ls -la
-echo "Contents of xblock directory:"
-ls -la xblock/ || echo "xblock directory not found"
-
-# List all available Python packages to diagnose import issues
-echo "Installed Python packages:"
-pip list
-
-# Start a simple HTTP server for initial testing
-echo "Starting debug server to confirm basic functionality..."
-cat > debug_server.py << 'EOF'
-import http.server
-import socketserver
+# Create the absolute simplest HTTP server possible
+echo "Creating minimal HTTP server..."
+cat > minimal_server.py << 'EOF'
+#!/usr/bin/env python3
 import os
+import socket
 import sys
-import json
-import traceback
 
-PORT = int(os.environ.get('PORT', 8080))
+# Get port from environment with fallback to 8080
+port = int(os.environ.get("PORT", 8080))
 
-class DebugHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        
-        output = ["<html><body><h1>xBlock Debug Information</h1>"]
-        
-        # Environment variables
-        output.append("<h2>Environment Variables</h2><pre>")
-        for k, v in sorted(os.environ.items()):
-            if not any(secret in k.lower() for secret in ['password', 'secret', 'key']):
-                output.append(f"{k}={v}")
-        output.append("</pre>")
-        
-        # System information
-        output.append("<h2>System Information</h2><pre>")
-        output.append(f"Python version: {sys.version}")
-        output.append(f"Platform: {sys.platform}")
-        output.append(f"Current directory: {os.getcwd()}")
-        output.append(f"Directory contents: {os.listdir('.')}")
-        output.append("</pre>")
-        
-        # Try to import Django
-        output.append("<h2>Django Check</h2><pre>")
-        try:
-            import django
-            output.append(f"Django version: {django.get_version()}")
-            
-            # Try to initialize Django settings
-            try:
-                from django.conf import settings
-                if settings.configured:
-                    output.append("Django settings are configured")
-                    output.append(f"DEBUG setting: {settings.DEBUG}")
-                    output.append(f"SECRET_KEY exists: {'Yes' if hasattr(settings, 'SECRET_KEY') else 'No'}")
-                    
-                    # Try to get database info
-                    try:
-                        db_info = settings.DATABASES.get('default', {})
-                        output.append(f"Database engine: {db_info.get('ENGINE', 'Not set')}")
-                        output.append(f"Database name: {db_info.get('NAME', 'Not set')}")
-                        output.append(f"Database host: {db_info.get('HOST', 'Not set')}")
-                    except Exception as e:
-                        output.append(f"Error getting database info: {str(e)}")
-                else:
-                    output.append("Django settings are not configured")
-            except Exception as e:
-                output.append(f"Error importing Django settings: {str(e)}")
-                output.append(traceback.format_exc())
-        except ImportError as e:
-            output.append(f"Could not import Django: {str(e)}")
-            
-        output.append("</pre></body></html>")
-        self.wfile.write("\n".join(output).encode())
+# Create a TCP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-print(f"Starting debug server on port {PORT}")
+# Allow reuse of the address
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
 try:
-    with socketserver.TCPServer(("", PORT), DebugHandler) as httpd:
-        print(f"Debug server running on port {PORT}")
-        httpd.serve_forever()
+    # Bind to all interfaces on the specified port
+    sock.bind(("0.0.0.0", port))
+    print(f"Successfully bound to port {port}")
+    
+    # Start listening
+    sock.listen(5)
+    print(f"Server is listening on port {port}")
+    
+    print("Ready for connections")
+    
+    # Main server loop
+    while True:
+        # Accept a connection
+        client, addr = sock.accept()
+        print(f"Connection from {addr}")
+        
+        try:
+            # Read the request (but we don't need to parse it for this test)
+            data = client.recv(1024)
+            
+            # Basic HTTP response
+            response = b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"
+            response += b"<html><body><h1>Cloud Run Debug Server</h1>"
+            response += b"<p>Container is running!</p>"
+            response += b"<p>This confirms the container can bind to the port.</p>"
+            response += b"</body></html>"
+            
+            # Send the response
+            client.sendall(response)
+        except Exception as e:
+            print(f"Error handling request: {e}")
+        finally:
+            # Close the connection
+            client.close()
+            
 except Exception as e:
-    print(f"Error starting debug server: {str(e)}")
-    traceback.print_exc()
+    print(f"ERROR: {e}", file=sys.stderr)
+    sys.exit(1)
 EOF
 
-# Start the debug server
-exec python debug_server.py
+# Make it executable
+chmod +x minimal_server.py
+
+# Run the server
+python minimal_server.py
