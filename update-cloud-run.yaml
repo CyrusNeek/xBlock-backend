@@ -1,0 +1,150 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: xblock
+spec:
+  template:
+    spec:
+      containers:
+      - image: gcr.io/xbrain-422617/xblock:latest
+        env:
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-secret-key
+              key: latest
+        - name: DEBUG
+          valueFrom:
+            secretKeyRef:
+              name: xblock-debug-flag
+              key: latest
+        - name: DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: xblock-db-name
+              key: latest
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: xblock-db-user
+              key: latest
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: xblock-db-password
+              key: latest
+        - name: DATABASE_HOST
+          valueFrom:
+            secretKeyRef:
+              name: xblock-db-host
+              key: latest
+        - name: DATABASE_PORT
+          valueFrom:
+            secretKeyRef:
+              name: xblock-db-port
+              key: latest
+        - name: CONSTANCE_REDIS_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: xblock-constance-redis
+              key: latest
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            secretKeyRef:
+              name: xblock-celery-broker
+              key: latest
+        - name: REDBEAT_REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: xblock-redbeat-redis
+              key: latest
+        - name: CELERY_RESULT_BACKEND
+          valueFrom:
+            secretKeyRef:
+              name: xblock-celery-result
+              key: latest
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: xblock-redis-url
+              key: latest
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-openai-key
+              key: latest
+        - name: QB_CLIENT_ID_PRODUCTION
+          valueFrom:
+            secretKeyRef:
+              name: xblock-qb-client-id
+              key: latest
+        - name: QB_CLIENT_SECRET_PRODUCTION
+          valueFrom:
+            secretKeyRef:
+              name: xblock-qb-client-secret
+              key: latest
+        - name: WHISPER_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: xblock-whisper-url
+              key: latest
+        - name: WHISPER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-whisper-key
+              key: latest
+        - name: DEFAULT_FROM_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: xblock-default-email
+              key: latest
+        - name: SENDGRID_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-sendgrid-key
+              key: latest
+        - name: STRIPE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-stripe-api-key
+              key: latest
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-stripe-secret-key
+              key: latest
+        - name: STRIPE_WEBHOOK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: xblock-stripe-webhook-key
+              key: latest
+        - name: GCP_BUCKET_NAME
+          valueFrom:
+            secretKeyRef:
+              name: xblock-gcp-bucket
+              key: latest
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          valueFrom:
+            secretKeyRef:
+              name: xblock-google-creds-path
+              key: latest
+        - name: GOOGLE_OAUTH_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: xblock-google-oauth-client-id
+              key: latest
+        - name: GOOGLE_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: xblock-google-oauth-secret
+              key: latest
+        - name: GOOGLE_OAUTH_CALLBACK_URL
+          valueFrom:
+            secretKeyRef:
+              name: xblock-google-oauth-callback
+              key: latest
+        - name: INTEGRATIONS_CREDENTIALS
+          valueFrom:
+            secretKeyRef:
+              name: xblock-integrations-credentials
+              key: latest
