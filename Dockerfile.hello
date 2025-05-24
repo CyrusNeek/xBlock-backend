@@ -1,0 +1,31 @@
+# Use the official Python image
+# https://hub.docker.com/_/python
+FROM python:3.9-slim
+
+# Allow statements and log messages to immediately appear in the Cloud Run logs
+ENV PYTHONUNBUFFERED True
+
+# Copy local code to the container image.
+WORKDIR /app
+COPY . ./
+
+# Create a simple hello world app based on official Cloud Run samples
+RUN echo 'import os\n\
+from flask import Flask\n\
+\n\
+app = Flask(__name__)\n\
+\n\
+@app.route("/")\n\
+def hello_world():\n\
+    """Return a simple hello world message."""\n\
+    name = os.environ.get("NAME", "World")\n\
+    return f"Hello {name}!"\n\
+\n\
+if __name__ == "__main__":\n\
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))\n' > main.py
+
+# Install production dependencies.
+RUN pip install Flask gunicorn
+
+# Run the web service on container startup.
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
