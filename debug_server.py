@@ -38,29 +38,13 @@ class DebugHandler(BaseHTTPRequestHandler):
             <pre>
             """
         
-        # Only show non-sensitive environment variables
-        safe_vars = [
-            'ALLOWED_HOSTS', 'CLOUD_RUN_TIMEOUT_SECONDS', 'DEBUG', 
-            'DJANGO_LOG_LEVEL', 'DJANGO_SETTINGS_MODULE', 'HOME',
-            'K_CONFIGURATION', 'K_REVISION', 'K_SERVICE', 'LANG',
-            'PATH', 'PORT', 'PWD', 'PYTHONDONTWRITEBYTECODE',
-            'PYTHONUNBUFFERED', 'PYTHON_SHA256', 'PYTHON_VERSION', 'SHLVL'
-        ]
+        # For security reasons, we don't show any environment variables in production
+        html += "Environment variables are not displayed for security reasons.\n"
+        html += "If you need to debug environment variables, please check the logs or contact the administrator.\n"
         
-        for key in safe_vars:
-            if key in os.environ:
-                html += f"{key}={os.environ.get(key)}\n"
-        
-        # For sensitive variables, just show that they are set but not their values
-        sensitive_prefixes = [
-            'DATABASE_', 'SECRET_', 'API_KEY', 'PASSWORD', 'REDIS_', 
-            'OPENAI_', 'QB_', 'STRIPE_', 'GOOGLE_', 'SENDGRID_'
-        ]
-        
-        for key in os.environ:
-            if any(key.startswith(prefix) or prefix in key for prefix in sensitive_prefixes):
-                if key not in safe_vars:
-                    html += f"{key}=**********[REDACTED]**********\n"
+        # Only show the count of environment variables
+        env_count = len(os.environ)
+        html += f"\nTotal environment variables: {env_count}\n"
         
         html += """
             </pre>

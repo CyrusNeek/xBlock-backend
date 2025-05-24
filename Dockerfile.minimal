@@ -40,16 +40,46 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # NOTE: Running as root for Cloud Run
 # Use CMD instead of ENTRYPOINT to avoid entrypoint.sh issues
 
-# Create a startup script directly in the Dockerfile
+# Create a startup script directly in the Dockerfile that prioritizes security
 RUN echo '#!/bin/bash\n\
 echo "Starting application directly from CMD"\n\
+# Set Django settings module\n\
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-xblock.settings.production}\n\
 echo "Using Django settings module: $DJANGO_SETTINGS_MODULE"\n\
+# Set port\n\
 export PORT=${PORT:-8080}\n\
 echo "Using PORT: $PORT"\n\
+# Run Django commands\n\
 python manage.py collectstatic --noinput || echo "collectstatic failed"\n\
 python manage.py migrate || echo "migrate failed"\n\
-exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 300 --log-level=info\n\
+# Validate Django settings\n\
+if python -c "import django; django.setup(); from django.conf import settings; print(\'Django settings loaded successfully\')" 2>/dev/null; then\n\
+  echo "Django settings loaded successfully, starting Gunicorn"\n\
+  # Start Gunicorn with proper settings\n\
+  exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 300 --log-level=info\n\
+else\n\
+  echo "Django settings failed to load, but we will NOT start debug server for security reasons"\n\
+  echo "Starting a minimal HTTP server that does not expose sensitive information"\n\
+  # Create a minimal response that does not expose any sensitive information\n\
+  python -c "\n\
+from http.server import HTTPServer, BaseHTTPRequestHandler\n\
+import os\n\
+\n\
+class SecureHandler(BaseHTTPRequestHandler):\n\
+    def do_GET(self):\n\
+        self.send_response(503)\n\
+        self.send_header(\'Content-type\', \'text/html\')\n\
+        self.end_headers()\n\
+        self.wfile.write(b\\\'<!DOCTYPE html><html><head><title>xBlock API - Service Unavailable</title></head>\\\n\
+        <body><h1>Service Temporarily Unavailable</h1>\\\n\
+        <p>The xBlock API is currently unavailable. Please try again later or contact support.</p>\\\n\
+        <p>This is a protective measure to prevent exposure of sensitive information.</p></body></html>\')\n\
+\n\
+server = HTTPServer((\'\', int(os.environ.get(\'PORT\', 8080))), SecureHandler)\n\
+print(\'Starting secure fallback server on port %s\' % os.environ.get(\'PORT\', 8080))\n\
+server.serve_forever()\n\
+"\n\
+fi\n\
 ' > /app/start.sh \
     && chmod +x /app/start.sh \
     && cat /app/start.sh
