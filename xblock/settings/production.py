@@ -2,9 +2,10 @@
 Production settings for xblock project.
 """
 
-from .base import *
+# Import all settings from the main settings module
+from ..settings import *
 
-# Override any base settings here for production
+# Override any settings here for production
 
 # For security in production
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
