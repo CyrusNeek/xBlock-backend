@@ -3,7 +3,7 @@ Production settings for xblock project.
 """
 
 import os
-from ..settings import *  # Base settings
+from xblock.settings.base import *  # Base settings
 
 # ---------------------
 # 🔒 Core Security Config
