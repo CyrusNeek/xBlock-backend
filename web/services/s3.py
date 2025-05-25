@@ -1,11 +1,6 @@
 from django.conf import settings
 
-
-import requests
-import boto3
-
-
-class S3Client:
+# AWS S3 client deprecated and removed
     UNIT_FILE_FOLDER = "unit-file"
     MEETING_FOLDER = "meetings"
     SSH_KEYS_FOLDER = "sshkeys"

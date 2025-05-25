@@ -19,7 +19,6 @@ class Recording(models.Model):
     ]
 
     STORAGE_GOOGLE_DRIVE = "google_drive"
-    STORAGE_AWS_S3 = "aws_s3"
     STORAGE_DROPBOX = "dropbox"
     STORAGE_ONEDRIVE = "onedrive"
     STORAGE_BOX = "box"
@@ -27,7 +26,6 @@ class Recording(models.Model):
 
     STORAGE_LOCATION_CHOICES = [
         (STORAGE_GOOGLE_DRIVE, "Google Drive"),
-        (STORAGE_AWS_S3, "AWS S3"),
         (STORAGE_DROPBOX, "Dropbox"),
         (STORAGE_ONEDRIVE, "OneDrive"),
         (STORAGE_BOX, "Box"),

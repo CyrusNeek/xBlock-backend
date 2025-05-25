@@ -1,4 +1,3 @@
-from web.services.weaviate import WeaviateManager
 from web.models.user import User
 
 
@@ -6,7 +5,6 @@ DOCUMENT_SEARCHER_FUNCTION = {
     "type": "function",
     "function": {
         "name": "document_searcher",
-        "description": "Searches for documents in the Weaviate database.\nusing @document command will specify this function.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -32,7 +30,6 @@ DOCUMENT_IMAGE_SEARCHER_FUNCTION = {
     "type": "function",
     "function": {
         "name": "document_image_searcher",
-        "description": "Searches for documents in the Weaviate database\nusing @document-image command will specify this function.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -56,7 +53,6 @@ DOCUMENT_IMAGE_SEARCHER_FUNCTION = {
 
 
 def document_searcher(user: User, query: str, single_prompt: str, limit: int):
-    manager = WeaviateManager()
 
     collection = manager.get_collection(
         "unitFiles"
@@ -71,7 +67,6 @@ def document_searcher(user: User, query: str, single_prompt: str, limit: int):
 
 def document_image_searcher(user: User, query: str, single_prompt: str, limit: int):
 
-    manager = WeaviateManager()
 
     collection = manager.get_collection(
         "unitFileImages"

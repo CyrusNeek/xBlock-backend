@@ -1,7 +1,6 @@
 from django.utils import timezone
 from celery import shared_task
 from web.models.assistant import Assistant
-from web.services import AzureDiarization
 from web.services.storage_service import StorageService
 from web.verba_assistant import VerbaAssistant
 from examples.whisper_diarization_format import whisper_diarization_format, whisper_vtk_diarization_format
@@ -294,7 +293,6 @@ def task_meeting_diarization(self, meeting_id):
     meeting.diarization_signal_triggered = True
     # meeting.save()
 
-    # get audio presign url from s3
     # file_name = meeting.recording_file_url.split("/")[-1]
     # presigned_url = StorageService().generate_presigned_download_url(
     #     settings.BUCKET_MEETING_FOLDER + "/" + file_name
@@ -307,7 +305,6 @@ def task_meeting_diarization(self, meeting_id):
     # instance = Whisper().diarization(file_url, meeting.name, meeting.created_by.id, meeting_id)
     instance = Whisper().diarization(file_url, meeting_id)
 
-    # diarization = AzureDiarization(audio_url=presigned_url, filename=meeting_filename).recognize()
     # print(diarization)
     # if diarization:
     #     logger.info(f"Saving Diarization result: {diarization}")

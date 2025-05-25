@@ -1,5 +1,5 @@
 import time
-import azure.cognitiveservices.speech as speechsdk
+# Azure diarization deprecated and removed
 from pydub import AudioSegment
 import requests
 from django.conf import settings

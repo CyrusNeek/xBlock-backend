@@ -7,9 +7,9 @@ from report.model_fields import REPORT_USER_FIELDS, RESY_RESERVATION_FIELDS, TOA
 from report.models.guest_profile import Guest, GuestProfile
 from web.models import Unit
 from django.db.models import Q
-from weaviate.classes.config import Property, DataType, ReferenceProperty, Configure
 
-from web.services.weaviate import WeaviateManager
+
+
 
 
 logger = logging.getLogger(__name__)

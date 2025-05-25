@@ -1,4 +1,4 @@
-from .azure_speech_diarization import AzureDiarization
+# from .azure_speech_diarization import AzureDiarization
 from .s3 import S3Client
 from .google_bucket import GoogleBucket
 from .whisper import Whisper

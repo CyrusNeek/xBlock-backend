@@ -4,9 +4,9 @@ from report.model_fields import REPORT_USER_FIELDS, TOCK_BOOKING_FIELDS
 from report.models.report_user import ReportUser
 from report.models.tock_booking import TockBooking
 from web.models.unit import Unit
-from web.services.weaviate import WeaviateManager
-from web.services.weaviate import WeaviateManager
-from weaviate.classes.config import Property, DataType, ReferenceProperty, Configure
+
+
+
 from django.utils import timezone
 
 

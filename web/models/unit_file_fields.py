@@ -3,5 +3,3 @@ UNIT_FILE_FIELDS = [
     "created_at", "updated_at", "file_name", "uploaded", "file_size",
     "file_type", "openai_file_id","unit"
 ]
-
-from examples.weaviate import create_collections

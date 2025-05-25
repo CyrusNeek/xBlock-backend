@@ -1,5 +1,4 @@
 from web.models.user import User
-from web.services.weaviate import WeaviateManager
 
 
 GLOBAL_SIMILAR_SEARCH_TOOL = {
@@ -79,19 +78,16 @@ GLOBAL_KEYWORD_SEARCH_TOOL = {
 
 
 def global_keyword_search(user: User, query: str, limit=10):
-    manager = WeaviateManager()
 
     return str(manager.global_keyword_search(query, limit))
 
 
 def keyword_search(user: User, collection_name: str, query: str, limit=10):
-    manager = WeaviateManager()
 
     return str(manager.keyword_search(collection_name, query, limit))
 
 
 def global_similar_search(user: User, query: str, limit=10):
-    # manager = WeaviateManager()
 
     # return manager.global_similiar_search(query, limit)
     return "Not implemented"
@@ -150,12 +146,10 @@ GLOBAL_HYBRID_SEARCH_TOOL = {
 }
 
 def global_hybrid_search(user: User, query: str, limit=10):
-    manager = WeaviateManager()
 
     return str(manager.global_hybrid_search(query, limit))
 
 
 def hybrid_search(user: User, collection_name: str, query: str, limit=10):
-    manager = WeaviateManager()
 
     return str(manager.hybrid_search(collection_name, query, limit))

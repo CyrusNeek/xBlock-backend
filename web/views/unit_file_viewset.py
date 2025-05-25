@@ -6,7 +6,6 @@ from django.conf import settings
 from web.services.storage_service import StorageService
 
 
-S3_FOLDER_NAME = settings.S3_UNIT_FILE_FOLDER
 
 
 class UnitFileViewSet(viewsets.ModelViewSet):
