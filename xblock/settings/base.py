@@ -253,7 +253,7 @@ if os.getenv("INTEGRATIONS_CREDENTIALS"):
     try:
         INTEGRATIONS_CREDENTIALS = json.loads(os.getenv("INTEGRATIONS_CREDENTIALS"))
     except json.JSONDecodeError:
-        print("Warning: Could not parse INTEGRATIONS_CREDENTIALS as JSON")
+        # Warning: Could not parse INTEGRATIONS_CREDENTIALS as JSON
 
 # AWS settings from either direct env vars or integrations credentials
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME") or INTEGRATIONS_CREDENTIALS.get("aws", {}).get("bucket_name")

@@ -55,19 +55,10 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Run Django commands' >> /app/start.sh && \
     echo 'echo "Attempting to run collectstatic..."' >> /app/start.sh && \
-    echo 'echo "Checking project structure..."' >> /app/start.sh && \
-    echo 'if [ ! -d "xblock" ]; then echo "CRITICAL: xblock directory not found"; ls -la; exit 1; fi' >> /app/start.sh && \
-    echo 'if [ ! -d "xblock/settings" ]; then echo "CRITICAL: settings directory not found"; ls -la xblock/; exit 1; fi' >> /app/start.sh && \
-    echo 'echo "Project structure OK"' >> /app/start.sh && \
-    echo 'echo "Python path: $PYTHONPATH"' >> /app/start.sh && \
-    echo 'echo "Current directory: $(pwd)"' >> /app/start.sh && \
-    echo 'echo "Directory contents:"' >> /app/start.sh && \
-    echo 'ls -la' >> /app/start.sh && \
-    echo 'echo "Settings directory contents:"' >> /app/start.sh && \
-    echo 'ls -la xblock/settings/' >> /app/start.sh && \
-    echo 'python manage.py collectstatic --noinput --traceback || { echo "CRITICAL: collectstatic command failed."; exit 1; }' >> /app/start.sh && \
-    echo 'echo "Attempting to run migrations..."' >> /app/start.sh && \
-    echo 'python manage.py migrate --traceback || { echo "CRITICAL: migrate command failed."; exit 1; }' >> /app/start.sh && \
+    echo 'if [ ! -d "xblock" ]; then exit 1; fi' >> /app/start.sh && \
+    echo 'if [ ! -d "xblock/settings" ]; then exit 1; fi' >> /app/start.sh && \
+    echo 'python manage.py collectstatic --noinput --traceback || { exit 1; }' >> /app/start.sh && \
+    echo 'python manage.py migrate --traceback || { exit 1; }' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Try to start Django/Gunicorn' >> /app/start.sh && \
     echo 'if python -c "import django; django.setup(); from django.conf import settings; print(\"Django settings OK\")" 2>/dev/null; then' >> /app/start.sh && \
