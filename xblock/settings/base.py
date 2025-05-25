@@ -250,6 +250,11 @@ MS_TEAMS_SELENIUM_CHANNEL_URL = "https://xblockai.webhook.office.com/webhookb2/1
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_GUEST_ASSISTANT_ID = "asst_z8TR5QAWIMJgvGcxt7vG5iVG"
 
+# Fallback settings for removed services (AWS, Azure, Weaviate)
+# These prevent errors when accessing these variables
+WEAVIATE_API_KEY = None
+WEAVIATE_URL = None
+
 
 # Quickbooks
 QB_CLIENT_ID = (
@@ -427,10 +432,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "web.tasks.periodic_tasks.update_assistant_time.task_update_assistant_instruction",
         "schedule": timedelta(minutes=5),
     },
-    # Weaviate task only runs if Weaviate credentials are configured
+    # Weaviate task disabled (service removed)
     "task_upload_data_to_weaviate":{
         "task": "web.tasks.periodic_tasks.upload_weaviate.upload_data_to_weaviate",
-        "schedule": crontab(minute=0, hour="*/3") if WEAVIATE_API_KEY and WEAVIATE_URL else crontab(minute=0, hour=0),  # Run at midnight if not configured
+        "schedule": crontab(minute=0, hour=0),  # Never runs (midnight scheduling)
     },
     "task_update_toast_report": {
         "task": "report.tasks.periodic.toast.toast_crawler.task_fetch_toasts_data",
