@@ -24,6 +24,9 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh
 # Copy the rest of the project files into /app
 COPY . /app/
 
+# List contents of /app/xblock/settings for debugging
+RUN ls -l /app/xblock/settings/
+
 # Ensure entrypoint script is executable (after all copies)
 RUN chmod +x /app/entrypoint.sh
 
@@ -53,6 +56,10 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'export PORT=${PORT:-8080}' >> /app/start.sh && \
     echo 'echo "Using PORT: $PORT"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
+    echo '# DEBUG: List settings directory' >> /app/start.sh && \
+    echo 'ls -l /app/xblock/settings' >> /app/start.sh && \
+    echo '# DEBUG: Test import of settings.production' >> /app/start.sh && \
+    echo 'python -c "import xblock.settings.production; print(\"Settings import OK\")" || { echo "Failed to import xblock.settings.production"; exit 1; }' >> /app/start.sh && \
     echo '# Run Django commands' >> /app/start.sh && \
     echo 'echo "Attempting to run collectstatic..."' >> /app/start.sh && \
     echo 'if [ ! -d "xblock" ]; then exit 1; fi' >> /app/start.sh && \
