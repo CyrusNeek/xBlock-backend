@@ -13,10 +13,9 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import os
 import json
-from datetime import timedelta
+from datetime import timedelta as dt_timedelta
 from corsheaders.defaults import default_headers
-from celery.schedules import crontab
-from celery.schedules import timedelta
+from celery.schedules import crontab, timedelta as celery_timedelta
 from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
 
@@ -144,7 +143,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": dt_timedelta(days=7),
 }
 
 MIDDLEWARE = [
@@ -430,7 +429,7 @@ CONSTANCE_CONFIG_FIELDSETS = {
 CELERY_BEAT_SCHEDULE = {
     "task_update_assistant_instruction": {
         "task": "web.tasks.periodic_tasks.update_assistant_time.task_update_assistant_instruction",
-        "schedule": timedelta(minutes=5),
+        "schedule": celery_timedelta(minutes=5),
     },
     # Weaviate task disabled (service removed)
     "task_upload_data_to_weaviate":{
@@ -469,7 +468,7 @@ CELERY_BEAT_SCHEDULE = {
     # },
     "task_crawl_xcelenergy_events": {
         "task": "report.tasks.periodic.crawl_events.task_crawl_xcelenergy_events",
-        "schedule": timedelta(hours=4),
+        "schedule": celery_timedelta(hours=4),
     },
     "task_update_whisper_diarization": {
         "task": "web.tasks.periodic_tasks.update_meetings_diarization.task_update_whisper_diarization",
@@ -481,7 +480,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     "send-queued-emails-every-15-second": {
         "task": "web.tasks.periodic_tasks.task_email.send_queued_emails",
-        "schedule": timedelta(seconds=15),
+        "schedule": celery_timedelta(seconds=15),
     },
     "allocate_brand_users_usages_task": {
         "task": "subscription.tasks.update_user_allocations.allocate_brand_users_usages",
