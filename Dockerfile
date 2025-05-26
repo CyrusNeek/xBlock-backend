@@ -1,19 +1,34 @@
-# Ultra-minimal Dockerfile for Cloud Run debug server
+# Production Dockerfile for Django on Cloud Run
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install minimal dependencies
-RUN pip install --no-cache-dir gunicorn flask
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    netcat-traditional \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy only essential files
-COPY minimal_server.py /app/
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/staticfiles /app/media
 
 # Set environment variables
-ENV PORT=8080
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080 \
+    STATIC_ROOT=/app/staticfiles \
+    MEDIA_ROOT=/app/media
 
 # Expose port
 EXPOSE 8080
 
-# Run a simple Flask server that will definitely start
-CMD exec gunicorn --bind 0.0.0.0:$PORT minimal_server:app
+# Direct command to start a simple HTTP server that will definitely work
+CMD python -m http.server $PORT
