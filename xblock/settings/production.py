@@ -3,55 +3,62 @@ Production settings for xblock project.
 """
 
 import os
-import logging
-from xblock.settings.base import *  # Base settings
+from pathlib import Path
+from .base import *
 
-# ---------------------
-# 🔒 Core Security Config
-# ---------------------
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = False
 
-# NEVER allow True as default
-DEBUG = os.environ.get("DEBUG", "").lower() in ("true", "1", "yes")
+# Get the Cloud Run service URL
+CLOUD_RUN_SERVICE_URL = os.environ.get('CLOUD_RUN_SERVICE_URL', '')
 
-# Add Cloud Run URLs to allowed hosts
+# Update ALLOWED_HOSTS to include Cloud Run service URL
 ALLOWED_HOSTS = [
-    "api.brain.xblock.ai",
-    "console.brain.xblock.ai",
-    "brain.xblock.ai",
-    "xblock-923738140935.us-central1.run.app",
-    "*.run.app",  # Allow all Cloud Run URLs
-    "localhost",
-    "127.0.0.1",
+    'localhost',
+    '127.0.0.1',
+    CLOUD_RUN_SERVICE_URL,
+    '.run.app',  # Allow all Cloud Run URLs
 ]
 
-# ---------------------
-# 🔐 Production Security Settings
-# ---------------------
-CSRF_COOKIE_SECURE = True
+# Security settings
+SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
-# Disable SSL redirect for Cloud Run (it's handled by GCP)
-SECURE_SSL_REDIRECT = False
-
-# Strict Transport Security
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# Extra headers
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_BROWSER_XSS_FILTER = True
-X_FRAME_OPTIONS = "DENY"
+# Trust the X-Forwarded-Proto header from Cloud Run
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# ---------------------
-# 📁 Static and Media Files
-# ---------------------
-# Use environment variables for static and media roots
-STATIC_ROOT = os.environ.get('STATIC_ROOT', os.path.join(BASE_DIR, 'staticfiles'))
-MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
+# Database configuration
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'),
+        'PORT': os.environ.get('DATABASE_PORT', '5432'),
+        'CONN_MAX_AGE': 60,  # Keep connections alive for 60 seconds
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
+    }
+}
 
-# ---------------------
-# 📊 Enhanced Logging
-# ---------------------
+# Static files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+
+# Media files
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -63,67 +70,62 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'xblock': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
         },
     },
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
 
-# ---------------------
-# 🧼 Disable dev utilities
-# ---------------------
-# Ensure debug toolbar is not loaded in production
-if 'debug_toolbar' in INSTALLED_APPS:
-    INSTALLED_APPS.remove('debug_toolbar')
-
-if 'debug_toolbar.middleware.DebugToolbarMiddleware' in MIDDLEWARE:
-    MIDDLEWARE.remove('debug_toolbar.middleware.DebugToolbarMiddleware')
-
-# ---------------------
-# 🗄️ Database Configuration
-# ---------------------
-# Ensure we're using PostgreSQL in production
-DATABASES = {
+# Cache configuration
+CACHES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get('DATABASE_NAME', 'xblock'),
-        'USER': os.environ.get('DATABASE_USER', 'xblock'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
-        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
-        'PORT': os.environ.get('DATABASE_PORT', '5432'),
-        'CONN_MAX_AGE': 600,  # 10 minutes connection persistence
-        'OPTIONS': {
-            'connect_timeout': 10,
-            'sslmode': 'prefer',
-        },
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
 
-# ---------------------
-# 🚀 Cloud Run Specific Settings
-# ---------------------
-# Set timeout higher for Cloud Run
-TIMEOUT = 300  # 5 minutes
+# Session configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
 
-# Ensure we're using the correct Redis URL
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CONSTANCE_REDIS_CONNECTION = REDIS_URL
+# Security middleware
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+]
+
+# Health check endpoint
+HEALTH_CHECK = {
+    'DISK_USAGE_MAX': 90,  # 90%
+    'MEMORY_MIN': 100,     # 100MB
+}
+
+# Gunicorn configuration
+GUNICORN_CMD_ARGS = '--workers=2 --threads=2 --timeout=30 --keep-alive=5'
