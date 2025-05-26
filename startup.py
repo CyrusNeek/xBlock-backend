@@ -4,6 +4,8 @@ import time
 from pathlib import Path
 
 def main():
+    print("Starting application...", file=sys.stderr)
+    
     # Set default environment variables
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'xblock.settings.production')
     
@@ -49,15 +51,34 @@ def main():
     try:
         import gunicorn.app.wsgi
         print("Starting Gunicorn server...", file=sys.stderr)
+        
+        # Get port from environment variable
+        port = int(os.getenv("PORT", "8080"))
+        print(f"Using port: {port}", file=sys.stderr)
+        
+        # Configure Gunicorn
+        gunicorn_config = {
+            "bind": f"0.0.0.0:{port}",
+            "workers": 2,
+            "timeout": 300,
+            "accesslog": "-",
+            "errorlog": "-",
+            "loglevel": "info",
+            "worker_class": "gthread",
+            "threads": 2,
+            "keepalive": 5,
+            "graceful_timeout": 120,
+            "preload_app": True
+        }
+        
+        print("Gunicorn configuration:", file=sys.stderr)
+        for key, value in gunicorn_config.items():
+            print(f"  {key}: {value}", file=sys.stderr)
+        
+        # Start Gunicorn
         gunicorn.app.wsgi.run(
             "xblock.wsgi:application",
-            host="0.0.0.0",
-            port=int(os.getenv("PORT", "8080")),
-            workers=2,
-            timeout=300,
-            accesslog="-",
-            errorlog="-",
-            loglevel="info"
+            **gunicorn_config
         )
     except Exception as e:
         print(f"Error starting Gunicorn: {str(e)}", file=sys.stderr)
