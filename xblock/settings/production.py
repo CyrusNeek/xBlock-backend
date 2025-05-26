@@ -12,13 +12,44 @@ DEBUG = False
 # Get the Cloud Run service URL
 CLOUD_RUN_SERVICE_URL = os.environ.get('CLOUD_RUN_SERVICE_URL', '')
 
-# Update ALLOWED_HOSTS to include Cloud Run service URL
+# Update ALLOWED_HOSTS to include Cloud Run service URL and custom domains
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    'api.brain.xblock.ai',
+    'console.brain.xblock.ai',
+    'brain.xblock.ai',
     CLOUD_RUN_SERVICE_URL,
     '.run.app',  # Allow all Cloud Run URLs
 ]
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    'https://api.brain.xblock.ai',
+    'https://console.brain.xblock.ai',
+    'https://brain.xblock.ai',
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Admin site settings
+ADMIN_URL = 'admin/'
+FORCE_SCRIPT_NAME = ''
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# Static files
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Security settings
 SECURE_SSL_REDIRECT = True

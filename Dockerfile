@@ -3,15 +3,19 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and set locale
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     curl \
+    libpq-dev \
+    locales \
     netcat-traditional \
     postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser
+# Set locale
+ENV LANG en_US.utf8
 
 # Copy requirements and install
 COPY requirements.txt .
@@ -22,27 +26,49 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies and set locale
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     netcat-traditional \
     postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+    locales \
+    && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
-# Create non-root user in final stage
+# Set locale
+ENV LANG en_US.utf8
+
+# Create non-root user
 RUN useradd -m -u 1000 appuser
 
 # Copy Python packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
-# Copy project files
-COPY . .
+# Create directories
+RUN mkdir -p /app/staticfiles /app/media
 
-# Create necessary directories and set permissions
-RUN mkdir -p /app/staticfiles /app/media && \
-    chown -R appuser:appuser /app && \
-    chmod -R 755 /app
+# Copy application files
+COPY requirements.txt manage.py startup.py ./
+COPY xblock xblock/
+COPY web web/
+COPY report report/
+COPY roles roles/
+COPY accounting accounting/
+COPY google_services google_services/
+COPY subscription subscription/
+COPY vtk vtk/
+COPY xmeeting xmeeting/
+COPY customer customer/
+COPY pos pos/
+COPY employee employee/
+COPY reservation reservation/
+COPY templates templates/
+
+# Set permissions
+RUN chown -R appuser:appuser /app && \
+    chmod -R 755 /app && \
+    chmod +x startup.py
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -57,11 +83,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 USER appuser
 
 # Expose port
-EXPOSE 8080
+EXPOSE ${PORT}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT}/healthz/ || exit 1
 
-# Use the new startup script
+# Use the startup script
 CMD ["python", "startup.py"]

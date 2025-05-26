@@ -13,23 +13,49 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Django project
-COPY . .
+# Copy only necessary files first
+COPY requirements.txt manage.py ./
+COPY xblock xblock/
+COPY web web/
+COPY report report/
+COPY roles roles/
+COPY accounting accounting/
+COPY google_services google_services/
+COPY subscription subscription/
+COPY vtk vtk/
+COPY xmeeting xmeeting/
+COPY customer customer/
+COPY pos pos/
+COPY employee employee/
+COPY reservation reservation/
+COPY templates templates/
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    DJANGO_SETTINGS_MODULE=xblock.settings.production
+    DJANGO_SETTINGS_MODULE=xblock.settings.production \
+    ALLOWED_HOSTS=* \
+    DEBUG=False \
+    HOME=/app
 
 # Expose port
 EXPOSE 8080
 
+# Create static directory
+RUN mkdir -p /app/staticfiles
+
 # Create a simple startup script
 RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
+    echo 'echo "Verifying Django settings..."' >> /app/start.sh && \
+    echo 'python -c "from django.conf import settings; print(f\'Django settings loaded. ALLOWED_HOSTS={settings.ALLOWED_HOSTS}\')"' >> /app/start.sh && \
+    echo 'echo "Collecting static files..."' >> /app/start.sh && \
     echo 'python manage.py collectstatic --noinput' >> /app/start.sh && \
+    echo 'echo "Running migrations..."' >> /app/start.sh && \
     echo 'python manage.py migrate --noinput' >> /app/start.sh && \
-    echo 'exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --log-level debug' >> /app/start.sh && \
+    echo 'echo "Starting Gunicorn..."' >> /app/start.sh && \
+    echo 'exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --log-level debug --access-logfile - --error-logfile - --capture-output' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Run the startup script
