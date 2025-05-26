@@ -10,17 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-from pathlib import Path
 import os
+import sys
 import json
-from datetime import timedelta as dt_timedelta
+from pathlib import Path
+from datetime import datetime, timedelta as dt_timedelta
 from corsheaders.defaults import default_headers
 from celery.schedules import crontab, timedelta as celery_timedelta
 from dotenv import load_dotenv, find_dotenv
-from datetime import datetime
-
-
-import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -44,6 +41,7 @@ ALLOWED_HOSTS = [
     "localhost:8000",
     "192.168.70.253",
     "localhost",
+    "api.brain.xblock.ai",
     "api",
     "hub.xblock.ai",
     "app.xblock.ai",
@@ -217,16 +215,18 @@ WSGI_APPLICATION = "xblock.wsgi.application"
 
 DATABASES = {
     "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    } if DEBUG else {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
         "NAME": os.getenv("DATABASE_NAME", "xblock"),
         "USER": os.getenv("DATABASE_USER", "xblock"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD", "Xblock123456"),
-        "HOST": os.getenv("DATABASE_HOST", "db"),
+        "PASSWORD": os.getenv("DATABASE_PASSWORD", "xblock"),
+        "HOST": os.getenv("DATABASE_HOST", "localhost"),
         "PORT": os.getenv("DATABASE_PORT", "5432"),
         "OPTIONS": {
             "connect_timeout": 100,
-            'options': '-c search_path=meeting,public,speech_to_knowledge,history',  
-
+            "sslmode": "disable"
         },
     },
     "test": {
@@ -439,7 +439,7 @@ CELERY_BEAT_SCHEDULE = {
     "task_update_toast_report": {
         "task": "report.tasks.periodic.toast.toast_crawler.task_fetch_toasts_data",
         # "schedule": crontab(minute=0, hour="5,17"),  # 5 AM and 5 PM
-        "schedule": timedelta(minutes=1),
+        "schedule": celery_timedelta(minutes=1),
 
     },
     "task_update_tock_reservations": {
@@ -516,19 +516,19 @@ CELERY_BEAT_SCHEDULE = {
     },
     "task_create_report_app_new_models_data": {
         "task": "report.tasks.periodic.create_new_models_data.create_report_app_new_models_object",
-        "schedule": timedelta(hours=6),
+        "schedule": celery_timedelta(hours=6),
     },
     "task_create_employee_app_new_models_data": {
         "task": "employee.tasks.periodic_task.create_employee_objects.create_employee_app_data",
-        "schedule": timedelta(hours=6),
+        "schedule": celery_timedelta(hours=6),
     },
     "task_check_users_subscription": {
         "task": "subscription.tasks.check_users_subscription.check_users_subscription",
-        "schedule": timedelta(minutes=1),
+        "schedule": celery_timedelta(minutes=1),
     },
     "task_send_subscription_email": {
         "task": "subscription.tasks.send_subscription_email.send_subscription_email",
-        "schedule": timedelta(minutes=1),
+        "schedule": celery_timedelta(minutes=1),
     },
 }
 

@@ -1,86 +1,61 @@
+import os
+import requests
 from django.conf import settings
 
-# AWS S3 client deprecated and removed
+class S3Client:
     UNIT_FILE_FOLDER = "unit-file"
     MEETING_FOLDER = "meetings"
     SSH_KEYS_FOLDER = "sshkeys"
 
-    s3_client = boto3.client(
-        "s3",
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        region_name=settings.AWS_REGION,
-    )
+    def __init__(self):
+        self.storage_path = os.path.join(settings.BASE_DIR, 'storage')
+        os.makedirs(self.storage_path, exist_ok=True)
+
+    def _get_file_path(self, folder, filename):
+        folder_path = os.path.join(self.storage_path, folder)
+        os.makedirs(folder_path, exist_ok=True)
+        return os.path.join(folder_path, filename)
 
     def upload_file(self, source, destination):
-        return self.s3_client.upload_file(
-            source, settings.AWS_STORAGE_BUCKET_NAME, destination
-        )
+        target_path = self._get_file_path('uploads', os.path.basename(destination))
+        with open(source, 'rb') as src, open(target_path, 'wb') as dst:
+            dst.write(src.read())
+        return target_path
 
     def download_file(self, source, destination):
-        file = self.s3_client.download_file(
-            settings.AWS_STORAGE_BUCKET_NAME, source, destination
-        )
-
-        return open(destination)
+        source_path = self._get_file_path('uploads', os.path.basename(source))
+        if os.path.exists(source_path):
+            with open(source_path, 'rb') as src, open(destination, 'wb') as dst:
+                dst.write(src.read())
+            return open(destination, 'rb')
+        return None
 
     def download_url(self, storage_name, filename):
-        filename = filename.split("/")[-1]
-        presigned_url = S3Client.generate_presigned_url(
-            folder=storage_name,
-            file_name=filename,
-        )
-
-        response = requests.get(presigned_url)
-        with open(filename, "wb") as file:
-            file.write(response.content)
-
-        return filename
+        file_path = self._get_file_path(storage_name, filename)
+        if os.path.exists(file_path):
+            return file_path
+        return None
 
     def generate_presigned_download_url(self, pathname, expire_at=3600):
-        """Generate a presigned URL to access a file. The file_path should include the path within the bucket."""
-        presigned_url = self.s3_client.generate_presigned_url(
-            "get_object",
-            Params={
-                "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
-                "Key": pathname,
-            },
-            ExpiresIn=expire_at,
-        )
-
-        return presigned_url
+        """For local development, just return the file path"""
+        return self._get_file_path('uploads', os.path.basename(pathname))
 
     def generate_presigned_upload_url(self, pathname, expire_at=3600):
-        presigned_post = self.s3_client.generate_presigned_post(
-            ExpiresIn=expire_at,
-            Bucket=settings.AWS_STORAGE_BUCKET_NAME,
-            Key=pathname,
-        )
-
-        return presigned_post["url"] + pathname, presigned_post["fields"]
+        """For local development, just return the file path"""
+        return self._get_file_path('uploads', os.path.basename(pathname)), {}
 
     @classmethod
     def generate_presigned_url(cls, folder, file_name):
-        """Generate a presigned URL to access a file. The file_path should include the path within the bucket."""
-        presigned_url = cls.s3_client.generate_presigned_url(
-            "get_object",
-            Params={
-                "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
-                "Key": f"{folder}/{file_name}",
-            },
-            ExpiresIn=3600,
-        )
-        return presigned_url
+        """For local development, just return the file path"""
+        return os.path.join(settings.BASE_DIR, 'storage', folder, file_name)
 
     @classmethod
     def generate_presigned_post_url(cls, folder, file_name):
-        """Generate a presigned POST URL for uploading a file."""
-        presigned_post = cls.s3_client.generate_presigned_post(
-            Bucket=settings.AWS_STORAGE_BUCKET_NAME,
-            Key=f"{folder}/{file_name}",
-            ExpiresIn=3600,
-        )
-        return presigned_post
+        """For local development, just return the file path"""
+        return {
+            'url': os.path.join(settings.BASE_DIR, 'storage', folder, file_name),
+            'fields': {}
+        }
 
 
 # Example usage

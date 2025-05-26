@@ -5,7 +5,6 @@ from roles.constants import LIMITED_MEETING_ACCESS, UNLIMITED_MEETING_ACCESS
 from web.constants import WhisperLanguages
 from web.models.category import Category
 from web.models.unit import Unit
-from django.contrib.postgres.fields import ArrayField
 from django.db.models import Q
 from roles.permissions import UserPermission
 
@@ -68,7 +67,7 @@ class Meeting(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100, blank=True)
     recording_file_url = models.URLField(max_length=1024, blank=True, null=True)
-    summary = ArrayField(models.TextField(), blank=True, null=True, default=list)
+    summary = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
