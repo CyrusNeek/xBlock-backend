@@ -1,81 +1,36 @@
-# Minimal Dockerfile for Django on Cloud Run
+# Use a slim Python image
 FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    netcat-traditional \
-    procps \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Copy requirements first (for better caching)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
-
-# Convert CRLF to LF for entrypoint.sh (if any)
-RUN sed -i 's/\r$//' /app/entrypoint.sh
-
-# Copy the rest of the project files into /app
-COPY . /app/
-
-# List contents of /app/xblock/settings for debugging
-RUN ls -l /app/xblock/settings/
-
-# Ensure entrypoint script is executable (after all copies)
-RUN chmod +x /app/entrypoint.sh
-
-# List contents of /app for debugging build (this should be before ENTRYPOINT)
-RUN ls -la /app
-
-# Expose port
-EXPOSE 8080
+# Copy the Django project
+COPY . .
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    DJANGO_SETTINGS_MODULE=xblock.settings.production
 
-# NOTE: Running as root for Cloud Run
-# Use CMD instead of ENTRYPOINT to avoid entrypoint.sh issues
+# Expose port
+EXPOSE 8080
 
-# Create a simple startup script that uses our secure debug server if Django fails
+# Create a simple startup script
 RUN echo '#!/bin/bash' > /app/start.sh && \
-    echo 'echo "Starting application directly from CMD"' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Set Django settings module' >> /app/start.sh && \
-    echo 'export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-xblock.settings.production}' >> /app/start.sh && \
-    echo 'echo "Using Django settings module: $DJANGO_SETTINGS_MODULE"' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Set port' >> /app/start.sh && \
-    echo 'export PORT=${PORT:-8080}' >> /app/start.sh && \
-    echo 'echo "Using PORT: $PORT"' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# DEBUG: List settings directory' >> /app/start.sh && \
-    echo 'ls -l /app/xblock/settings' >> /app/start.sh && \
-    echo '# DEBUG: Test import of settings.production' >> /app/start.sh && \
-    echo 'python -c "import xblock.settings.production; print(\"Settings import OK\")" || { echo "Failed to import xblock.settings.production"; exit 1; }' >> /app/start.sh && \
-    echo '# Run Django commands' >> /app/start.sh && \
-    echo 'echo "Attempting to run collectstatic..."' >> /app/start.sh && \
-    echo 'if [ ! -d "xblock" ]; then exit 1; fi' >> /app/start.sh && \
-    echo 'if [ ! -d "xblock/settings" ]; then exit 1; fi' >> /app/start.sh && \
-    echo 'python manage.py collectstatic --noinput --traceback || { exit 1; }' >> /app/start.sh && \
-    echo 'python manage.py migrate --traceback || { exit 1; }' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Try to start Django/Gunicorn' >> /app/start.sh && \
-    echo 'if python -c "import django; django.setup(); from django.conf import settings; print(\"Django settings OK\")" 2>/dev/null; then' >> /app/start.sh && \
-    echo '  echo "Django settings loaded successfully, starting Gunicorn"' >> /app/start.sh && \
-    echo '  exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 300 --log-level=info' >> /app/start.sh && \
-    echo 'else' >> /app/start.sh && \
-    echo '  echo "CRITICAL: Django settings failed to load. Application cannot start." >&2' >> /app/start.sh && \
-    echo '  exit 1' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
+    echo 'python manage.py collectstatic --noinput' >> /app/start.sh && \
+    echo 'python manage.py migrate --noinput' >> /app/start.sh && \
+    echo 'exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --log-level debug' >> /app/start.sh && \
     chmod +x /app/start.sh
 
-# Use CMD instead of ENTRYPOINT
-CMD ["/bin/bash", "/app/start.sh"]
+# Run the startup script
+CMD ["/app/start.sh"]
