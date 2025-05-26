@@ -30,7 +30,6 @@ steps:
       - '1'
       - '--max-instances'
       - '10'
-      - 'http_get=path=/healthz/,initial_delay=5s'
       - '--set-secrets'
       - 'SECRET_KEY=xblock-secret-key:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,CONSTANCE_REDIS_CONNECTION=xblock-constance-redis:latest,CELERY_BROKER_URL=xblock-celery-broker:latest,REDBEAT_REDIS_URL=xblock-redbeat-redis:latest,CELERY_RESULT_BACKEND=xblock-celery-result:latest,REDIS_URL=xblock-redis-url:latest,OPENAI_API_KEY=xblock-openai-key:latest,QB_CLIENT_ID_PRODUCTION=xblock-qb-client-id:latest,QB_CLIENT_SECRET_PRODUCTION=xblock-qb-client-secret:latest,WHISPER_BASE_URL=xblock-whisper-url:latest,WHISPER_API_KEY=xblock-whisper-key:latest,DEFAULT_FROM_EMAIL=xblock-default-email:latest,SENDGRID_API_KEY=xblock-sendgrid-key:latest,STRIPE_API_KEY=xblock-stripe-api-key:latest,STRIPE_SECRET_KEY=xblock-stripe-secret-key:latest,STRIPE_WEBHOOK_API_KEY=xblock-stripe-webhook-key:latest,GCP_BUCKET_NAME=xblock-gcp-bucket:latest,GOOGLE_CREDS_FILE=xblock-google-creds-path:latest'
       - '--update-env-vars'
