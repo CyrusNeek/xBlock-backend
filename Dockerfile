@@ -49,7 +49,7 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 RUN mkdir -p /app/staticfiles /app/media
 
 # Copy application files
-COPY requirements.txt manage.py startup.py ./
+COPY requirements.txt manage.py ./
 COPY xblock xblock/
 COPY web web/
 COPY report report/
@@ -67,8 +67,7 @@ COPY templates templates/
 
 # Set permissions
 RUN chown -R appuser:appuser /app && \
-    chmod -R 755 /app && \
-    chmod +x startup.py
+    chmod -R 755 /app
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -82,12 +81,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Switch to non-root user
 USER appuser
 
-# Expose port
-EXPOSE ${PORT}
+# Expose port 8080 for Cloud Run
+EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/healthz/ || exit 1
-
-# Use the startup script
-CMD ["python", "startup.py"]
+# Use entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+CMD ["/app/entrypoint.sh"]

@@ -47,15 +47,20 @@ python manage.py migrate || { echo "WARNING: Database migration failed"; }
 echo "Validating Django settings..."
 python -c "import django; django.setup(); from django.conf import settings; print(f'Django settings loaded successfully. DEBUG={settings.DEBUG}')" || { echo "ERROR: Django settings validation failed"; exit 1; }
 
-# Start Gunicorn server
+# Start Gunicorn server optimized for Cloud Run
 echo "===== STARTING GUNICORN SERVER ====="
 exec gunicorn xblock.wsgi:application \
     --bind 0.0.0.0:$PORT \
-    --workers 3 \
-    --timeout 300 \
-    --log-level=debug \
+    --worker-class gthread \
+    --workers 1 \
+    --threads 8 \
+    --timeout 0 \
+    --graceful-timeout 30 \
+    --keep-alive 60 \
+    --log-level info \
     --access-logfile - \
-    --error-logfile -
+    --error-logfile - \
+    --capture-output
 
 # This line will only execute if exec gunicorn fails
 echo "ERROR: Gunicorn execution failed. Container will now exit."
