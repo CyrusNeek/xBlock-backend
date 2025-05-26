@@ -31,4 +31,4 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 EXPOSE 8080
 
 # Use CMD instead of ENTRYPOINT for better Cloud Run compatibility
-CMD exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 300
+CMD ["python", "startup_test.py"]
