@@ -1,16 +1,10 @@
-# xBlock Cloud Build Configuration for Production
-
-# Build steps to execute
 steps:
-  # Build the container image using the minimal Dockerfile without non-root user
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock:latest', '-f', 'Dockerfile.minimal', '.']
-  
-  # Push the container image to Container Registry
+
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/xblock:latest']
-  
-  # Then set up all the environment variables and secrets we need
+
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -36,35 +30,14 @@ steps:
       - '0'
       - '--max-instances'
       - '10'
-      # No environment variables needed as they're set by Cloud Run or in secrets
-      - '--update-secrets'
-      - 'DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest,SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug-flag:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,CONSTANCE_REDIS_CONNECTION=xblock-constance-redis:latest,CELERY_BROKER_URL=xblock-celery-broker:latest,REDBEAT_REDIS_URL=xblock-redbeat-redis:latest,CELERY_RESULT_BACKEND=xblock-celery-result:latest,REDIS_URL=xblock-redis-url:latest,OPENAI_API_KEY=xblock-openai-key:latest,QB_CLIENT_ID_PRODUCTION=xblock-qb-client-id:latest,QB_CLIENT_SECRET_PRODUCTION=xblock-qb-client-secret:latest,WHISPER_BASE_URL=xblock-whisper-url:latest,WHISPER_API_KEY=xblock-whisper-key:latest,DEFAULT_FROM_EMAIL=xblock-default-email:latest,SENDGRID_API_KEY=xblock-sendgrid-key:latest,STRIPE_API_KEY=xblock-stripe-api-key:latest,STRIPE_SECRET_KEY=xblock-stripe-secret-key:latest,STRIPE_WEBHOOK_API_KEY=xblock-stripe-webhook-key:latest,GCP_BUCKET_NAME=xblock-gcp-bucket:latest,GOOGLE_APPLICATION_CREDENTIALS=xblock-google-creds-path:latest,GOOGLE_OAUTH_CLIENT_ID=xblock-google-oauth-client-id:latest,GOOGLE_OAUTH_CLIENT_SECRET=xblock-google-oauth-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=xblock-google-oauth-callback:latest,INTEGRATIONS_CREDENTIALS=xblock-integrations-credentials:latest'
+      - '--set-secrets'
+      - 'DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest,SECRET_KEY=xblock-secret-key:latest,DEBUG=xblock-debug-flag:latest,DATABASE_NAME=xblock-db-name:latest,DATABASE_USER=xblock-db-user:latest,DATABASE_PASSWORD=xblock-db-password:latest,DATABASE_HOST=xblock-db-host:latest,DATABASE_PORT=xblock-db-port:latest,CONSTANCE_REDIS_CONNECTION=xblock-constance-redis:latest,CELERY_BROKER_URL=xblock-celery-broker:latest,REDBEAT_REDIS_URL=xblock-redbeat-redis:latest,CELERY_RESULT_BACKEND=xblock-celery-result:latest,REDIS_URL=xblock-redis-url:latest,OPENAI_API_KEY=xblock-openai-key:latest,QB_CLIENT_ID_PRODUCTION=xblock-qb-client-id:latest,QB_CLIENT_SECRET_PRODUCTION=xblock-qb-client-secret:latest,WHISPER_BASE_URL=xblock-whisper-url:latest,WHISPER_API_KEY=xblock-whisper-key:latest,DEFAULT_FROM_EMAIL=xblock-default-email:latest,SENDGRID_API_KEY=xblock-sendgrid-key:latest,STRIPE_API_KEY=xblock-stripe-api-key:latest,STRIPE_SECRET_KEY=xblock-stripe-secret-key:latest,STRIPE_WEBHOOK_API_KEY=xblock-stripe-webhook-key:latest,GCP_BUCKET_NAME=xblock-gcp-bucket:latest,.env=backend-env:latest,GOOGLE_CREDS_FILE=xblock-google-creds-path:latest'
+      - '--update-env-vars'
+      - 'GOOGLE_APPLICATION_CREDENTIALS=/secrets/google/creds.json'
+      - '--mount-secrets'
+      - '/secrets/google=GOOGLE_CREDS_FILE'
+
 images:
   - 'gcr.io/$PROJECT_ID/xblock:latest'
 
-# Timeout for the build process
 timeout: '1200s'
-
-# --------------------------------------------------------------------
-# HELPER SCRIPT (NOT PART OF CLOUDBUILD)
-# The following bash script should be run separately to grant permissions
-# to the Cloud Run service account:
-# --------------------------------------------------------------------
-# #!/bin/bash
-# 
-# # Find the compute service account associated with your project
-# PROJECT_ID=$(gcloud config get-value project)
-# SERVICE_ACCOUNT="${PROJECT_ID}@serverless-robot-prod.iam.gserviceaccount.com"
-# 
-# # If the above doesn't work, try this alternative
-# SERVICE_ACCOUNT="service-$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')@serverless-robot-prod.iam.gserviceaccount.com"
-# 
-# echo "Using service account: $SERVICE_ACCOUNT"
-# 
-# # Then grant access to each secret
-# for SECRET in xblock-secret-key xblock-debug-flag xblock-db-name xblock-db-user xblock-db-password xblock-db-host xblock-db-port xblock-constance-redis xblock-celery-broker xblock-redbeat-redis xblock-celery-result xblock-redis-url xblock-openai-key xblock-qb-client-id xblock-qb-client-secret xblock-whisper-url xblock-whisper-key xblock-default-email xblock-sendgrid-key xblock-stripe-api-key xblock-stripe-secret-key xblock-stripe-webhook-key xblock-gcp-bucket xblock-google-creds-path xblock-google-oauth-client-id xblock-google-oauth-secret xblock-google-oauth-callback xblock-integrations-credentials; do
-#     gcloud secrets add-iam-policy-binding $SECRET \
-#         --member="serviceAccount:$SERVICE_ACCOUNT" \
-#         --role="roles/secretmanager.secretAccessor"
-# done
-# --------------------------------------------------------------------
