@@ -1,45 +1,62 @@
 #!/bin/bash
 # This script starts the Django application in Cloud Run
 
+# Exit immediately if a command exits with a non-zero status
+set -e
+
 # Print debug info to help troubleshoot
-echo "Starting entrypoint.sh"
+echo "===== STARTING ENTRYPOINT.SH ====="
 echo "Current directory: $(pwd)"
 echo "Directory contents: $(ls -la)"
-
-# Don't exit on error, just continue and log
-set -x  # Enable command echo for debugging
+echo "Python version: $(python --version)"
+echo "Pip packages: $(pip list)"
 
 # Explicitly set the Django settings module if not already set
-# This ensures it's set correctly even if Cloud Run environment variables aren't properly passed
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-xblock.settings.production}
-
-# Print current Django settings module for debugging
 echo "Using Django settings module: $DJANGO_SETTINGS_MODULE"
 
-# Make sure PORT is set
+# Make sure PORT is set for Cloud Run
 export PORT=${PORT:-8080}
 echo "Using PORT: $PORT"
 
-# Optional: wait for DB to be ready
-python manage.py wait_for_db || echo "Database not ready, continuing..."
+# Print environment variables for debugging (excluding secrets)
+echo "Environment variables:"
+env | grep -v -E "SECRET|PASSWORD|KEY" | sort
+
+# Check if Django can be imported
+echo "Checking Django installation..."
+python -c "import django; print(f'Django version: {django.get_version()}')" || { echo "ERROR: Django not installed properly"; exit 1; }
+
+# Check if the wsgi module can be imported
+echo "Checking WSGI configuration..."
+python -c "import xblock.wsgi" || { echo "ERROR: Cannot import xblock.wsgi"; exit 1; }
+
+# Wait for database to be ready (with timeout)
+echo "Waiting for database connection..."
+python manage.py wait_for_db || { echo "WARNING: Database not ready, but continuing..."; }
 
 # Collect static files
-python manage.py collectstatic --noinput || echo "collectstatic failed"
+echo "Collecting static files..."
+python manage.py collectstatic --noinput || { echo "WARNING: Static file collection failed"; }
 
 # Apply migrations
-python manage.py migrate || echo "migrate failed"
+echo "Applying database migrations..."
+python manage.py migrate || { echo "WARNING: Database migration failed"; }
 
 # Validate Django settings before starting server
-python -c "import django; django.setup(); from django.conf import settings; print(f'Django settings loaded successfully. DEBUG={settings.DEBUG}')" || echo "Django settings validation failed"
+echo "Validating Django settings..."
+python -c "import django; django.setup(); from django.conf import settings; print(f'Django settings loaded successfully. DEBUG={settings.DEBUG}')" || { echo "ERROR: Django settings validation failed"; exit 1; }
 
 # Start Gunicorn server
-echo "Attempting to start Gunicorn server..."
+echo "===== STARTING GUNICORN SERVER ====="
 exec gunicorn xblock.wsgi:application \
     --bind 0.0.0.0:$PORT \
     --workers 3 \
     --timeout 300 \
-    --log-level=info
+    --log-level=debug \
+    --access-logfile - \
+    --error-logfile -
 
-# If exec gunicorn fails (e.g., Django settings are wrong), the container will exit.
-# This is the desired behavior to prevent running an insecure or broken app.
-echo "Gunicorn execution finished or failed. Container will now exit."
+# This line will only execute if exec gunicorn fails
+echo "ERROR: Gunicorn execution failed. Container will now exit."
+exit 1
