@@ -36,7 +36,7 @@ steps:
     - '--port'
     - '8080'
     - '--set-env-vars'
-    - 'PYTHONUNBUFFERED=1'
+    - 'PYTHONUNBUFFERED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
     - '--set-secrets'
     - '/app/.env=backend-env:latest'
     - '--vpc-connector'
@@ -44,7 +44,7 @@ steps:
     - '--vpc-egress'
     - 'all'
     - '--startup-probe'
-    - 'tcpSocket:port=8080,initialDelaySeconds=30,periodSeconds=30,timeoutSeconds=10,failureThreshold=3'
+    - 'tcpSocket:port=8080,initialDelaySeconds=60,periodSeconds=30,timeoutSeconds=30,failureThreshold=3'
     - '--timeout'
     - '300'
     - '--concurrency'
@@ -55,6 +55,10 @@ steps:
     - 'all'
     - '--service-account'
     - '923738140935-compute@developer.gserviceaccount.com'
+    - '--execution-environment'
+    - 'gen2'
+    - '--cpu-boost'
+    - '--session-affinity'
 
 images:
   - 'gcr.io/$PROJECT_ID/xblock'

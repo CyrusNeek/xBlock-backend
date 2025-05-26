@@ -32,6 +32,8 @@ def load_secrets():
             logger.info("Secrets loaded successfully")
         else:
             logger.warning("No .env file found at /app/.env")
+            # List contents of /app directory for debugging
+            logger.info(f"Contents of /app directory: {os.listdir('/app')}")
     except Exception as e:
         logger.error(f"Error loading secrets: {str(e)}")
         raise
@@ -56,6 +58,9 @@ def main():
         logger.info(f"Current working directory: {os.getcwd()}")
         logger.info(f"Directory contents: {os.listdir('.')}")
         logger.info(f"Environment variables: {dict(os.environ)}")
+        logger.info(f"Process ID: {os.getpid()}")
+        logger.info(f"User ID: {os.getuid() if hasattr(os, 'getuid') else 'N/A'}")
+        logger.info(f"Group ID: {os.getgid() if hasattr(os, 'getgid') else 'N/A'}")
 
         # Load secrets
         load_secrets()
@@ -105,10 +110,21 @@ def main():
             'loglevel': 'info',
             'capture_output': True,
             'enable_stdio_inheritance': True,
+            'preload_app': True,
+            'graceful_timeout': 120,
+            'max_requests': 1000,
+            'max_requests_jitter': 50,
+            'worker_connections': 1000,
+            'backlog': 2048,
         }
+
+        logger.info("Gunicorn configuration:")
+        for key, value in options.items():
+            logger.info(f"  {key}: {value}")
 
         # Start Gunicorn
         from xblock.wsgi import application
+        logger.info("Starting Gunicorn server...")
         StandaloneApplication(application, options).run()
 
     except Exception as e:
