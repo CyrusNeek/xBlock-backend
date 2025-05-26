@@ -1,62 +1,64 @@
 steps:
-# Build the container image
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock', '.']
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock', '.']
 
-# Scan the container image
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['scan', 'gcr.io/$PROJECT_ID/xblock']
+  # (Optional) Scan the container image for vulnerabilities
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['scan', 'gcr.io/$PROJECT_ID/xblock']
 
-# Push the container image to Container Registry
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/xblock']
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/xblock']
 
-# Deploy container image to Cloud Run
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: gcloud
-  args:
-    - 'run'
-    - 'deploy'
-    - 'xblock'
-    - '--image'
-    - 'gcr.io/$PROJECT_ID/xblock'
-    - '--region'
-    - 'us-central1'
-    - '--platform'
-    - 'managed'
-    - '--allow-unauthenticated'
-    - '--memory'
-    - '2Gi'
-    - '--cpu'
-    - '2'
-    - '--min-instances'
-    - '1'
-    - '--max-instances'
-    - '10'
-    - '--port'
-    - '8080'
-    - '--set-env-vars'
-    - 'PYTHONUNBUFFERED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/GOOGLE_CREDS_FILE'
-    - '--set-secrets'
-    - '.env=backend-env:latest,GOOGLE_CREDS_FILE=xblock-google-creds-path:latest'
-    - '--vpc-connector'
-    - 'xblock-vpc-connector'
-    - '--vpc-egress'
-    - 'all'
-    - '--timeout'
-    - '300'
-    - '--concurrency'
-    - '80'
-    - '--cpu-throttling'
-    - '--no-traffic'
-    - '--ingress'
-    - 'all'
-    - '--service-account'
-    - '923738140935-compute@developer.gserviceaccount.com'
-    - '--execution-environment'
-    - 'gen2'
-    - '--cpu-boost'
-    - '--session-affinity'
+  # Deploy the container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'xblock'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/xblock'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--min-instances'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--port'
+      - '8080'
+      - '--set-env-vars'
+      - 'PYTHONUNBUFFERED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/GOOGLE_CREDS_FILE'
+      - '--set-secrets'
+      - '/app/.env=backend-env:latest'
+      - '--set-secrets'
+      - 'GOOGLE_CREDS_FILE=xblock-google-creds-path:latest'
+      - '--vpc-connector'
+      - 'xblock-vpc-connector'
+      - '--vpc-egress'
+      - 'all'
+      - '--startup-probe'
+      - 'tcpSocket:port=8080,initialDelaySeconds=60,periodSeconds=30,timeoutSeconds=30,failureThreshold=3'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '80'
+      - '--cpu-throttling'
+      - '--ingress'
+      - 'all'
+      - '--execution-environment'
+      - 'gen2'
+      - '--cpu-boost'
+      - '--service-account'
+      - '923738140935-compute@developer.gserviceaccount.com'
 
 images:
   - 'gcr.io/$PROJECT_ID/xblock'
@@ -66,14 +68,6 @@ options:
   machineType: 'E2_HIGHCPU_8'
   diskSizeGb: '100'
   dynamicSubstitutions: true
-
-substitutions:
-  _ENVIRONMENT: 'production'
-
-artifacts:
-  objects:
-    location: 'gs://${PROJECT_ID}-build-artifacts/'
-    paths: ['gcr.io/$PROJECT_ID/xblock']
 
 tags:
   - 'production'
