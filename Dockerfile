@@ -22,10 +22,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy only necessary files from builder
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    netcat-traditional \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
-COPY --from=builder /app /app
 
 # Copy project files
 COPY . .
@@ -40,7 +46,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080 \
     STATIC_ROOT=/app/staticfiles \
     MEDIA_ROOT=/app/media \
-    GOOGLE_CLOUD_PROJECT=${PROJECT_ID}
+    GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
+    PATH="/usr/local/bin:${PATH}"
 
 # Switch to non-root user
 USER appuser
@@ -50,7 +57,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/health/ || exit 1
+    CMD curl -f http://localhost:${PORT}/healthz/ || exit 1
 
 # Use the new startup script
 CMD ["python", "startup.py"]
