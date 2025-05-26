@@ -37,10 +37,17 @@ steps:
   - '--max-instances=2'
   - '--set-secrets=/app/.env=backend-env:latest'
   - '--set-secrets=DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest'
-  - '--set-env-vars=ENVIRONMENT=production'
+  - '--set-env-vars=ENVIRONMENT=production,GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
   - '--security-level=secure-always'
   - '--vpc-connector=xblock-vpc-connector'
   - '--vpc-egress=all-traffic'
+  - '--startup-cpu-boost'
+  - '--cpu-throttling'
+  - '--execution-environment=gen2'
+  - '--startup-probe-path=/healthz/'
+  - '--startup-probe-period=10s'
+  - '--startup-probe-timeout=5s'
+  - '--startup-probe-failure-threshold=3'
   timeout: '600s'
 
 options:

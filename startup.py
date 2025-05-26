@@ -1,40 +1,45 @@
 import os
 import sys
+import time
 from pathlib import Path
-from google.cloud import secretmanager
-
-def access_secret_version(project_id, secret_id, version_id="latest"):
-    """Access the secret version."""
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode("UTF-8")
 
 def main():
-    # Get the project ID from environment
-    project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-    if not project_id:
-        print("Error: GOOGLE_CLOUD_PROJECT environment variable not set", file=sys.stderr)
-        sys.exit(1)
+    # Set default environment variables
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'xblock.settings.production')
+    
+    # Check if we're running in Cloud Run
+    if os.getenv('K_SERVICE'):  # Cloud Run sets this environment variable
+        print("Running in Cloud Run environment", file=sys.stderr)
+        # In Cloud Run, secrets are already mounted as environment variables
+        # No need to load from Secret Manager
+    else:
+        print("Running in local environment", file=sys.stderr)
+        try:
+            from google.cloud import secretmanager
+            project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+            if not project_id:
+                print("Error: GOOGLE_CLOUD_PROJECT environment variable not set", file=sys.stderr)
+                sys.exit(1)
 
-    # Load secrets from Secret Manager
-    try:
-        # Load backend environment variables
-        backend_env = access_secret_version(project_id, "backend-env")
-        with open("/app/.env", "w") as f:
-            f.write(backend_env)
+            def access_secret_version(secret_id, version_id="latest"):
+                """Access the secret version."""
+                client = secretmanager.SecretManagerServiceClient()
+                name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
+                response = client.access_secret_version(request={"name": name})
+                return response.payload.data.decode("UTF-8")
 
-        # Load Django settings module
-        django_settings = access_secret_version(project_id, "xblock-django-settings-module")
-        os.environ["DJANGO_SETTINGS_MODULE"] = django_settings
-
-    except Exception as e:
-        print(f"Error loading secrets: {str(e)}", file=sys.stderr)
-        sys.exit(1)
+            # Load backend environment variables
+            backend_env = access_secret_version("backend-env")
+            with open("/app/.env", "w") as f:
+                f.write(backend_env)
+        except Exception as e:
+            print(f"Warning: Could not load secrets from Secret Manager: {str(e)}", file=sys.stderr)
+            print("Continuing with existing environment variables...", file=sys.stderr)
 
     # Run Django migrations
     try:
         from django.core.management import execute_from_command_line
+        print("Running database migrations...", file=sys.stderr)
         execute_from_command_line(["manage.py", "migrate"])
     except Exception as e:
         print(f"Error running migrations: {str(e)}", file=sys.stderr)
@@ -43,6 +48,7 @@ def main():
     # Start Gunicorn
     try:
         import gunicorn.app.wsgi
+        print("Starting Gunicorn server...", file=sys.stderr)
         gunicorn.app.wsgi.run(
             "xblock.wsgi:application",
             host="0.0.0.0",
