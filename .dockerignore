@@ -24,13 +24,6 @@ var/
 .installed.cfg
 *.egg
 
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media
-
 # Virtual Environment
 venv/
 ENV/
@@ -41,6 +34,24 @@ ENV/
 *.swp
 *.swo
 
-# OS specific
-.DS_Store
-Thumbs.db
+# Local development
+*.log
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# Media and static files (will be served from cloud storage)
+media/
+staticfiles/
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Docker
+Dockerfile
+docker-compose*.yml
