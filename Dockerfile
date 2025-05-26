@@ -1,4 +1,4 @@
-# Production Dockerfile for Django on Cloud Run
+# Django Dockerfile for Cloud Run
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -30,5 +30,5 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Expose port
 EXPOSE 8080
 
-# Direct command to start a simple HTTP server that will definitely work
-CMD python -m http.server $PORT
+# Use CMD instead of ENTRYPOINT for better Cloud Run compatibility
+CMD exec gunicorn xblock.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 300
