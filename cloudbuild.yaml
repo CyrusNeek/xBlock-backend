@@ -1,55 +1,63 @@
 steps:
 # Build the container image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/xblock:latest', '.']
-  timeout: '1800s'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/xblock', '.']
 
-# Run security scan
+# Scan the container image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['scan', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
-  timeout: '600s'
+  args: ['scan', 'gcr.io/$PROJECT_ID/xblock']
 
 # Push the container image to Container Registry
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
-  timeout: '600s'
-
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/xblock:latest']
-  timeout: '600s'
+  args: ['push', 'gcr.io/$PROJECT_ID/xblock']
 
 # Deploy container image to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
   args:
-  - 'run'
-  - 'deploy'
-  - 'xblock'
-  - '--image=gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA'
-  - '--region=us-central1'
-  - '--platform=managed'
-  - '--allow-unauthenticated'
-  - '--memory=2Gi'
-  - '--cpu=2'
-  - '--timeout=300s'
-  - '--port=8080'
-  - '--min-instances=1'
-  - '--max-instances=2'
-  - '--set-secrets=/app/.env=backend-env:latest'
-  - '--set-secrets=DJANGO_SETTINGS_MODULE=xblock-django-settings-module:latest'
-  - '--set-env-vars=ENVIRONMENT=production,GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
-  - '--security-level=secure-always'
-  - '--vpc-connector=xblock-vpc-connector'
-  - '--vpc-egress=all-traffic'
-  - '--startup-cpu-boost'
-  - '--cpu-throttling'
-  - '--execution-environment=gen2'
-  - '--startup-probe-path=/healthz/'
-  - '--startup-probe-period=30s'
-  - '--startup-probe-timeout=10s'
-  - '--startup-probe-failure-threshold=3'
-  - '--startup-probe-initial-delay=30s'
-  timeout: '600s'
+    - 'run'
+    - 'deploy'
+    - 'xblock'
+    - '--image'
+    - 'gcr.io/$PROJECT_ID/xblock'
+    - '--region'
+    - 'us-central1'
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated'
+    - '--memory'
+    - '2Gi'
+    - '--cpu'
+    - '2'
+    - '--min-instances'
+    - '1'
+    - '--max-instances'
+    - '10'
+    - '--port'
+    - '8080'
+    - '--set-env-vars'
+    - 'PYTHONUNBUFFERED=1'
+    - '--set-secrets'
+    - '/app/.env=backend-env:latest'
+    - '--vpc-connector'
+    - 'xblock-vpc-connector'
+    - '--vpc-egress'
+    - 'all'
+    - '--startup-probe'
+    - 'tcpSocket:port=8080,initialDelaySeconds=30,periodSeconds=30,timeoutSeconds=10,failureThreshold=3'
+    - '--timeout'
+    - '300'
+    - '--concurrency'
+    - '80'
+    - '--cpu-throttling'
+    - '--no-traffic'
+    - '--ingress'
+    - 'all'
+    - '--service-account'
+    - '923738140935-compute@developer.gserviceaccount.com'
+
+images:
+  - 'gcr.io/$PROJECT_ID/xblock'
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -63,7 +71,7 @@ substitutions:
 artifacts:
   objects:
     location: 'gs://${PROJECT_ID}-build-artifacts/'
-    paths: ['gcr.io/$PROJECT_ID/xblock:$COMMIT_SHA']
+    paths: ['gcr.io/$PROJECT_ID/xblock']
 
 tags:
   - 'production'

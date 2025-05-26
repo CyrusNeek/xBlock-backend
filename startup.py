@@ -1,103 +1,120 @@
+#!/usr/bin/env python
+"""
+Startup script for xblock application.
+"""
+
 import os
 import sys
 import time
+import logging
 import traceback
 from pathlib import Path
 
-def main():
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler(sys.stderr)]
+)
+logger = logging.getLogger(__name__)
+
+def load_secrets():
+    """Load secrets from mounted .env file."""
     try:
-        print("Starting application...", file=sys.stderr)
-        print(f"Python version: {sys.version}", file=sys.stderr)
-        print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
-        print(f"Directory contents: {os.listdir('.')}", file=sys.stderr)
-        
-        # Set default environment variables
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'xblock.settings.production')
-        print(f"DJANGO_SETTINGS_MODULE: {os.getenv('DJANGO_SETTINGS_MODULE')}", file=sys.stderr)
-        
-        # Check if we're running in Cloud Run
-        if os.getenv('K_SERVICE'):  # Cloud Run sets this environment variable
-            print("Running in Cloud Run environment", file=sys.stderr)
-            # In Cloud Run, secrets are already mounted as environment variables
-            # No need to load from Secret Manager
+        env_path = Path('/app/.env')
+        if env_path.exists():
+            logger.info("Loading secrets from .env file")
+            with open(env_path) as f:
+                for line in f:
+                    if line.strip() and not line.startswith('#'):
+                        key, value = line.strip().split('=', 1)
+                        os.environ[key] = value
+            logger.info("Secrets loaded successfully")
         else:
-            print("Running in local environment", file=sys.stderr)
-            try:
-                from google.cloud import secretmanager
-                project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-                if not project_id:
-                    print("Error: GOOGLE_CLOUD_PROJECT environment variable not set", file=sys.stderr)
-                    sys.exit(1)
+            logger.warning("No .env file found at /app/.env")
+    except Exception as e:
+        logger.error(f"Error loading secrets: {str(e)}")
+        raise
 
-                def access_secret_version(secret_id, version_id="latest"):
-                    """Access the secret version."""
-                    client = secretmanager.SecretManagerServiceClient()
-                    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-                    response = client.access_secret_version(request={"name": name})
-                    return response.payload.data.decode("UTF-8")
+def run_migrations():
+    """Run Django migrations."""
+    try:
+        logger.info("Running Django migrations")
+        from django.core.management import call_command
+        call_command('migrate', '--noinput')
+        logger.info("Migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Error running migrations: {str(e)}")
+        raise
 
-                # Load backend environment variables
-                backend_env = access_secret_version("backend-env")
-                with open("/app/.env", "w") as f:
-                    f.write(backend_env)
-            except Exception as e:
-                print(f"Warning: Could not load secrets from Secret Manager: {str(e)}", file=sys.stderr)
-                print("Continuing with existing environment variables...", file=sys.stderr)
+def main():
+    """Main startup function."""
+    try:
+        # Print startup information
+        logger.info("=== Starting xblock application ===")
+        logger.info(f"Python version: {sys.version}")
+        logger.info(f"Current working directory: {os.getcwd()}")
+        logger.info(f"Directory contents: {os.listdir('.')}")
+        logger.info(f"Environment variables: {dict(os.environ)}")
 
-        # Run Django migrations
-        try:
-            from django.core.management import execute_from_command_line
-            print("Running database migrations...", file=sys.stderr)
-            execute_from_command_line(["manage.py", "migrate"])
-        except Exception as e:
-            print(f"Error running migrations: {str(e)}", file=sys.stderr)
-            print("Traceback:", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-            sys.exit(1)
+        # Load secrets
+        load_secrets()
+
+        # Set Django settings module
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'xblock.settings.production')
+        logger.info(f"DJANGO_SETTINGS_MODULE set to {os.environ['DJANGO_SETTINGS_MODULE']}")
+
+        # Run migrations
+        run_migrations()
+
+        # Import Django
+        import django
+        django.setup()
+        logger.info("Django setup completed")
+
+        # Configure Gunicorn
+        import gunicorn.app.base
+
+        class StandaloneApplication(gunicorn.app.base.BaseApplication):
+            def __init__(self, app, options=None):
+                self.options = options or {}
+                self.application = app
+                super().__init__()
+
+            def load_config(self):
+                for key, value in self.options.items():
+                    self.cfg.set(key, value)
+
+            def load(self):
+                return self.application
+
+        # Get port from environment
+        port = int(os.environ.get('PORT', 8080))
+        logger.info(f"Starting server on port {port}")
+
+        # Configure Gunicorn options
+        options = {
+            'bind': f'0.0.0.0:{port}',
+            'workers': 2,
+            'threads': 2,
+            'timeout': 30,
+            'keepalive': 5,
+            'worker_class': 'gthread',
+            'accesslog': '-',
+            'errorlog': '-',
+            'loglevel': 'info',
+            'capture_output': True,
+            'enable_stdio_inheritance': True,
+        }
 
         # Start Gunicorn
-        try:
-            import gunicorn.app.wsgi
-            print("Starting Gunicorn server...", file=sys.stderr)
-            
-            # Get port from environment variable
-            port = int(os.getenv("PORT", "8080"))
-            print(f"Using port: {port}", file=sys.stderr)
-            
-            # Configure Gunicorn
-            gunicorn_config = {
-                "bind": f"0.0.0.0:{port}",
-                "workers": 2,
-                "timeout": 300,
-                "accesslog": "-",
-                "errorlog": "-",
-                "loglevel": "info",
-                "worker_class": "gthread",
-                "threads": 2,
-                "keepalive": 5,
-                "graceful_timeout": 120,
-                "preload_app": True
-            }
-            
-            print("Gunicorn configuration:", file=sys.stderr)
-            for key, value in gunicorn_config.items():
-                print(f"  {key}: {value}", file=sys.stderr)
-            
-            # Start Gunicorn
-            gunicorn.app.wsgi.run(
-                "xblock.wsgi:application",
-                **gunicorn_config
-            )
-        except Exception as e:
-            print(f"Error starting Gunicorn: {str(e)}", file=sys.stderr)
-            print("Traceback:", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-            sys.exit(1)
+        from xblock.wsgi import application
+        StandaloneApplication(application, options).run()
+
     except Exception as e:
-        print(f"Unexpected error: {str(e)}", file=sys.stderr)
-        print("Traceback:", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Startup failed: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main() 
