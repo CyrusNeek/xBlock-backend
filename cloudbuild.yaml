@@ -38,7 +38,7 @@ steps:
       - '--set-env-vars'
       - 'PYTHONUNBUFFERED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/GOOGLE_CREDS_FILE,DJANGO_SETTINGS_MODULE=xblock.settings.production,STATIC_ROOT=/app/staticfiles,MEDIA_ROOT=/app/media,CLOUD_RUN_SERVICE_URL=${_SERVICE_URL}'
       - '--set-secrets'
-      - '/app/.env=backend-env:latest,GOOGLE_CREDS_FILE=xblock-google-creds-path:latest,DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=django-secret-key:latest'
+      - '/app/.env=backend-env:latest,GOOGLE_CREDS_FILE=xblock-google-creds-path:latest,SECRET_KEY=django-secret-key:latest,DATABASE_NAME=DATABASE_NAME:latest,DATABASE_USER=DATABASE_USER:latest,DATABASE_PASSWORD=DATABASE_PASSWORD:latest,DATABASE_HOST=DATABASE_HOST:latest,DATABASE_PORT=DATABASE_PORT:latest'
       - '--vpc-connector'
       - 'xblock-vpc-connector'
       - '--vpc-egress'

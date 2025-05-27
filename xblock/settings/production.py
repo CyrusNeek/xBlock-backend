@@ -65,18 +65,38 @@ SECURE_HSTS_PRELOAD = True
 # Trust the X-Forwarded-Proto header from Cloud Run
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Database configuration using dj-database-url
+# Database configuration
 import dj_database_url
 
-# Fall back to explicit configuration if DATABASE_URL is not set
+# First try to use DATABASE_URL if provided
+database_url = os.environ.get('DATABASE_URL')
+
+# If no URL, construct database config from individual settings
+if not database_url:
+    database_url = (
+        f"postgresql://"
+        f"{os.environ.get('DATABASE_USER', '')}"
+        f":{os.environ.get('DATABASE_PASSWORD', '')}"
+        f"@{os.environ.get('DATABASE_HOST', '')}"
+        f":{os.environ.get('DATABASE_PORT', '5432')}"
+        f"/{os.environ.get('DATABASE_NAME', '')}"
+    )
+
+# Configure the database with health checks and SSL
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"postgresql://{os.environ.get('DATABASE_USER')}:{os.environ.get('DATABASE_PASSWORD')}@{os.environ.get('DATABASE_HOST')}:{os.environ.get('DATABASE_PORT', '5432')}/{os.environ.get('DATABASE_NAME')}",
+    'default': dj_database_url.parse(
+        database_url,
         conn_max_age=600,
         conn_health_checks=True,
         ssl_require=True,
     )
 }
+
+# Validate database configuration
+required_db_settings = ['ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT']
+for setting in required_db_settings:
+    if setting not in DATABASES['default']:
+        raise ValueError(f"Missing required database setting: {setting}")
 
 # Static and Media files
 STATIC_URL = '/static/'
