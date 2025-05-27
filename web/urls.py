@@ -54,6 +54,7 @@ from rest_framework_simplejwt.views import (
 from web.views import TaskViewSet, UnitFileViewSet, ChangePasswordView
 from web.views.quickbooks import get_quickbooks_auth_url, handle_quickbooks_callback
 from web.views import HasUnreadNotificationsView, NotificationsView, register, resend_otp, update_user, update_wizard_status, send_welcome_email
+from web.views.health import HealthCheckView
 
 router = DefaultRouter()
 router.register(r"groups", GroupViewSet)
@@ -143,4 +144,5 @@ urlpatterns = [
 
     path('threads/<uuid:thread_id>/chats/', single_chat_viewset, name='thread-chats'),
     path('brand/init/', BrandInitViewset.as_view(), name='brand-init'),
+    path('health/', HealthCheckView.as_view(), name='health-check'),
 ]
