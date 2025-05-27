@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     netcat-traditional \
     postgresql-client \
+    libpq-dev \
     locales \
     && rm -rf /var/lib/apt/lists/* \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
@@ -80,7 +81,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     STATIC_ROOT=/app/staticfiles \
     MEDIA_ROOT=/app/media \
     GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
-    PATH="/usr/local/bin:${PATH}"
+    PATH="/usr/local/bin:${PATH}" \
+    PYTHONPATH=/app \
+    DJANGO_SETTINGS_MODULE=xblock.settings.production
 
 # Expose port 8080 for Cloud Run
 EXPOSE 8080
@@ -88,5 +91,8 @@ EXPOSE 8080
 # Switch to non-root user
 USER appuser
 
+# Health check
+HEALTHCHECK CMD curl --fail http://localhost:8080/health/ || exit 1
+
 # Set the entrypoint
-CMD ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
