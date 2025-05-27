@@ -1,8 +1,29 @@
 #!/bin/bash
 # This script starts the Django application in Cloud Run
 
-# Exit on error, but allow certain commands to fail
-set -e
+# Exit on error and print each command
+set -ex
+
+# Function to log to stderr for Cloud Run logging
+log() {
+    echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] $1" >&2
+}
+
+# Function to dump environment (excluding secrets)
+dump_env() {
+    log "Environment variables (excluding secrets):"
+    env | grep -v -E "SECRET|PASSWORD|KEY" | sort >&2
+}
+
+# Print Python and system info
+print_debug_info() {
+    log "Python version: $(python --version)"
+    log "Python path: $PYTHONPATH"
+    log "Current directory: $(pwd)"
+    log "Directory contents: $(ls -la)"
+    log "Django settings module: $DJANGO_SETTINGS_MODULE"
+    log "Port: ${PORT:-8080}"
+}
 
 # Function to log messages with timestamps
 log() {
@@ -20,35 +41,60 @@ check_required_var() {
 }
 
 log "===== STARTING ENTRYPOINT.SH ====="
-# System information
-log "System Information:"
-log "Current directory: $(pwd)"
-log "Directory contents: $(ls -la)"
-log "Python version: $(python --version)"
-log "Pip packages: $(pip list)"
+# Print initial debug info
+log "=== STARTUP DIAGNOSTICS ==="
+print_debug_info
+dump_env
 
 # Check required environment variables
-log "Checking required environment variables..."
-check_required_var "DJANGO_SETTINGS_MODULE" || exit 1
-check_required_var "DATABASE_NAME" || exit 1
-check_required_var "DATABASE_USER" || exit 1
-check_required_var "DATABASE_PASSWORD" || exit 1
-check_required_var "DATABASE_HOST" || exit 1
+log "=== CHECKING ENVIRONMENT ==="
+required_vars=(
+    "DJANGO_SETTINGS_MODULE"
+    "DATABASE_NAME"
+    "DATABASE_USER"
+    "DATABASE_PASSWORD"
+    "DATABASE_HOST"
+    "PORT"
+)
 
-# Set default values
-export PORT=${PORT:-8080}
-log "Using PORT: $PORT"
-
-# Print non-sensitive environment variables
-log "Environment variables (excluding secrets):"
-env | grep -v -E "SECRET|PASSWORD|KEY" | sort
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        log "ERROR: Required environment variable $var is not set"
+        exit 1
+    fi
+    log "✓ $var is set"
+done
 
 # Verify Python environment
-log "Verifying Python environment..."
-python -c "import django; print(f'Django {django.get_version()} installed successfully')" || { log "ERROR: Django not installed properly"; exit 1; }
+log "=== CHECKING PYTHON ==="
+if ! python -c "import sys; print(f'Python {sys.version} loaded successfully')"; then
+    log "ERROR: Python environment check failed"
+    exit 1
+fi
+
+# Verify Django installation
+log "=== CHECKING DJANGO ==="
+if ! python -c "import django; print(f'Django {django.get_version()} installed successfully')"; then
+    log "ERROR: Django not installed properly"
+    exit 1
+fi
+
+# Test WSGI module import
+log "=== CHECKING WSGI ==="
+if ! python -c "import xblock.wsgi; print('WSGI module loaded successfully')"; then
+    log "ERROR: Cannot import WSGI module"
+    exit 1
+fi
+
+# Test settings module
+log "=== CHECKING SETTINGS ==="
+if ! python -c "import django; django.setup(); from django.conf import settings; print(f'Settings loaded. DEBUG={settings.DEBUG}')"; then
+    log "ERROR: Cannot load Django settings"
+    exit 1
+fi
 
 # Test database connection
-log "Testing database connection..."
+log "=== CHECKING DATABASE ==="
 python << END
 import os
 from django.db import connections
@@ -64,38 +110,41 @@ except OperationalError as e:
     exit(1)
 END
 
-# Run database migrations
-log "Running database migrations..."
-python manage.py migrate --noinput || { log "ERROR: Database migration failed"; exit 1; }
+# Collect static files (non-blocking)
+log "=== COLLECTING STATIC FILES ==="
+python manage.py collectstatic --noinput || log "WARNING: Static file collection failed"
 
-# Collect static files
-log "Collecting static files..."
-python manage.py collectstatic --noinput || { log "WARNING: Static file collection failed"; }
+# Run migrations (optional in Cloud Run)
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+    log "=== RUNNING MIGRATIONS ==="
+    python manage.py migrate --noinput || { log "ERROR: Database migration failed"; exit 1; }
+fi
 
-# Validate Django settings
-log "Validating Django settings..."
-python -c "import django; django.setup(); from django.conf import settings; print(f'Settings validated. DEBUG={settings.DEBUG}')" || { log "ERROR: Settings validation failed"; exit 1; }
+# Start Gunicorn
+log "=== STARTING GUNICORN ==="
+log "Binding to 0.0.0.0:${PORT}"
 
-# Start Gunicorn with Cloud Run optimized settings
-log "===== STARTING GUNICORN SERVER ====="
+# Test port availability
+if ! python -c "import socket; s=socket.socket(); s.bind(('0.0.0.0', ${PORT})); s.close()"; then
+    log "ERROR: Port ${PORT} is not available"
+    exit 1
+fi
+
+# Start with minimal config first
 exec gunicorn xblock.wsgi:application \
-    --bind 0.0.0.0:$PORT \
+    --bind "0.0.0.0:${PORT}" \
     --worker-class gthread \
     --workers 1 \
-    --threads 8 \
-    --timeout 0 \
-    --graceful-timeout 30 \
-    --keep-alive 60 \
+    --threads 4 \
+    --timeout 30 \
     --log-level debug \
-    --access-logfile - \
     --error-logfile - \
+    --access-logfile - \
     --capture-output \
-    --preload \
-    --max-requests 1000 \
-    --max-requests-jitter 50 \
+    --logger-class gunicorn.glogging.Logger \
     --log-file - \
-    --logger-class gunicorn.glogging.Logger
+    --preload
 
-# This line will only execute if exec gunicorn fails
+# This line will only execute if gunicorn fails
 log "ERROR: Gunicorn execution failed"
 exit 1
