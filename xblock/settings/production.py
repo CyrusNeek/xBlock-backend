@@ -65,20 +65,17 @@ SECURE_HSTS_PRELOAD = True
 # Trust the X-Forwarded-Proto header from Cloud Run
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Database configuration
+# Database configuration using dj-database-url
+import dj_database_url
+
+# Fall back to explicit configuration if DATABASE_URL is not set
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME'),
-        'USER': os.environ.get('DATABASE_USER'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-        'HOST': os.environ.get('DATABASE_HOST'),
-        'PORT': os.environ.get('DATABASE_PORT', '5432'),
-        'CONN_MAX_AGE': 60,  # Keep connections alive for 60 seconds
-        'OPTIONS': {
-            'connect_timeout': 10,
-        },
-    }
+    'default': dj_database_url.config(
+        default=f"postgresql://{os.environ.get('DATABASE_USER')}:{os.environ.get('DATABASE_PASSWORD')}@{os.environ.get('DATABASE_HOST')}:{os.environ.get('DATABASE_PORT', '5432')}/{os.environ.get('DATABASE_NAME')}",
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True,
+    )
 }
 
 # Static and Media files
