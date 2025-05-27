@@ -36,7 +36,7 @@ steps:
       - '--port'
       - '8080'
       - '--set-env-vars'
-      - 'PYTHONUNBUFFERED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/GOOGLE_CREDS_FILE'
+      - 'PYTHONUNBUFFERED=1,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/GOOGLE_CREDS_FILE,DJANGO_SETTINGS_MODULE=xblock.settings.production,STATIC_ROOT=/app/staticfiles,MEDIA_ROOT=/app/media'
       - '--set-secrets'
       - '/app/.env=backend-env:latest,GOOGLE_CREDS_FILE=xblock-google-creds-path:latest'
       - '--vpc-connector'
