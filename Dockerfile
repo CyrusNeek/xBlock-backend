@@ -65,7 +65,11 @@ COPY employee employee/
 COPY reservation reservation/
 COPY templates templates/
 
-# Set permissions
+# Copy and set up entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Set permissions for all files
 RUN chown -R appuser:appuser /app && \
     chmod -R 755 /app
 
@@ -78,13 +82,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
     PATH="/usr/local/bin:${PATH}"
 
-# Switch to non-root user
-USER appuser
-
 # Expose port 8080 for Cloud Run
 EXPOSE 8080
 
-# Use entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Switch to non-root user
+USER appuser
+
+# Set the entrypoint
 CMD ["/app/entrypoint.sh"]
