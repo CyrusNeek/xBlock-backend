@@ -81,13 +81,13 @@ DATABASES = {
     }
 }
 
-# Static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Static and Media files
 STATIC_URL = '/static/'
-
-# Media files
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+# Use environment variables for paths
+STATIC_ROOT = os.environ.get('STATIC_ROOT', os.path.join(BASE_DIR, 'staticfiles'))
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 
 # Logging configuration
 LOGGING = {
@@ -158,5 +158,5 @@ HEALTH_CHECK = {
     'MEMORY_MIN': 100,     # 100MB
 }
 
-# Gunicorn configuration
-GUNICORN_CMD_ARGS = '--workers=2 --threads=2 --timeout=30 --keep-alive=5'
+# Gunicorn configuration is handled by entrypoint.sh
+# Remove GUNICORN_CMD_ARGS to avoid conflicts
