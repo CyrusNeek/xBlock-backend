@@ -25,10 +25,14 @@ ALLOWED_HOSTS = [
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    'https://api.brain.xblock.ai',
-    'https://console.brain.xblock.ai',
-    'https://brain.xblock.ai',
+CSRF_TRUSTED_ORIGINS = [
+    "https://hub.xblock.ai",
+    "https://app.xblock.ai",
+    "https://admin.xblock.ai",
+    "https://beta.xblock.ai",
+    "https://stage.xblock.ai",
+    "https://stage-front.xblock.ai",
+    "https://console.brain.xblock.ai",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
@@ -42,7 +46,7 @@ CORS_ALLOW_METHODS = [
 
 # Admin site settings
 ADMIN_URL = 'admin/'
-FORCE_SCRIPT_NAME = ''
+FORCE_SCRIPT_NAME = ''  # Ensures admin is served at /admin/
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
