@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
 # Set locale
-ENV LANG en_US.utf8
+ENV LANG=en_US.utf8
 
 # Copy requirements and install
 COPY requirements.txt .
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
 # Set locale
-ENV LANG en_US.utf8
+ENV LANG=en_US.utf8
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser
@@ -80,7 +80,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080 \
     STATIC_ROOT=/app/staticfiles \
     MEDIA_ROOT=/app/media \
-    GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
+    GOOGLE_CLOUD_PROJECT=localdev \
     PATH="/usr/local/bin:${PATH}" \
     PYTHONPATH=/app \
     DJANGO_SETTINGS_MODULE=xblock.settings.production

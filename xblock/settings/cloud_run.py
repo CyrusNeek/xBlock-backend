@@ -103,9 +103,15 @@ SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = "DENY"
 
 # ---------------------
-# Redis Configuration
-# ---------------------
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CONSTANCE_REDIS_CONNECTION = REDIS_URL
+# Redis/Celery temporarily disabled for minimal Cloud Run deploy
+# Restore these lines and configure Redis when async/background tasks are needed
+# REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+# CELERY_BROKER_URL = REDIS_URL
+# CELERY_RESULT_BACKEND = REDIS_URL
+# CONSTANCE_REDIS_CONNECTION = REDIS_URL
+
+# Minimal settings: disable Celery/Redis
+REDIS_URL = None
+CELERY_BROKER_URL = None
+CELERY_RESULT_BACKEND = None
+CONSTANCE_REDIS_CONNECTION = None
