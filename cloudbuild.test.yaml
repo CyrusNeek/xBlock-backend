@@ -35,6 +35,10 @@ steps:
       - '0'
       - '--max-instances'
       - '10'
+      - '--set-secrets'
+      - 'backend-env=backend-env:latest'
+      - '--set-env-vars'
+      - 'DJANGO_SETTINGS_MODULE=xblock.settings.production,DEBUG=False'
 
 images:
   - 'gcr.io/$PROJECT_ID/xblock-test:$COMMIT_SHA'
