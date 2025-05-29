@@ -3,16 +3,22 @@
 import os
 import sys
 
-# Only load .env for local development (not on Cloud Run)
-if os.environ.get("K_SERVICE") is None:
+# Load environment variables from BACKEND_ENV if running on Cloud Run
+if os.environ.get("K_SERVICE") is not None:
+    backend_env = os.environ.get("BACKEND_ENV")
+    if backend_env:
+        for line in backend_env.splitlines():
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ.setdefault(key.strip(), value.strip())
+else:
     try:
         import dotenv
         dotenv.load_dotenv()
         print("Loaded .env for local development", file=sys.stderr)
     except ImportError:
         pass
-
-
 
 
 def main():
