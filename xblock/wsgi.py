@@ -6,6 +6,12 @@ import os
 import sys
 import logging
 
+# Log the first 500 characters of BACKEND_ENV for debugging
+try:
+    logger.info(f"BACKEND_ENV (first 500 chars): {os.environ.get('BACKEND_ENV', '')[:500]}")
+except Exception:
+    print("BACKEND_ENV (first 500 chars):", os.environ.get("BACKEND_ENV", "")[:500], file=sys.stderr)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

@@ -3,6 +3,9 @@
 import os
 import sys
 
+# Log the first 500 characters of BACKEND_ENV for debugging
+print("BACKEND_ENV (first 500 chars):", os.environ.get("BACKEND_ENV", "")[:500], file=sys.stderr)
+
 # Load environment variables from BACKEND_ENV if running on Cloud Run
 if os.environ.get("K_SERVICE") is not None:
     backend_env = os.environ.get("BACKEND_ENV")
