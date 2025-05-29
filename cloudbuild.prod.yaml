@@ -10,7 +10,7 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'xblock'
+      - 'backend-prod'
       - '--image'
       - 'gcr.io/$PROJECT_ID/xblock:latest'
       - '--region'
