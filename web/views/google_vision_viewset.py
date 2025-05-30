@@ -5,18 +5,28 @@ import tempfile
 from google.cloud import vision
 import re
 
-# Handle Google credentials from environment variable if available
-gcp_credentials_json = os.getenv('GCP_CREDENTIALS')
-if gcp_credentials_json:
-    # Create a temporary file with the credentials
-    fd, temp_path = tempfile.mkstemp(suffix='.json')
-    with os.fdopen(fd, 'w') as tmp:
-        tmp.write(gcp_credentials_json)
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
-else:
-    # Fallback for local development
-    credential_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'xbrain_credential.json')
+# For local development, GOOGLE_APPLICATION_CREDENTIALS can be set to the path of a service account key JSON file.
+# In Cloud Run, this variable should generally be UNSET. The Google Cloud client libraries will
+# automatically use the runtime service account of the Cloud Run service if this variable is not set.
+# Ensure the Cloud Run service's runtime service account has the necessary IAM permissions for Google Vision API.
+credential_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+if credential_path:
+    # If GOOGLE_APPLICATION_CREDENTIALS is set (e.g., for local development), use it.
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credential_path
+    # print(f"Using GOOGLE_APPLICATION_CREDENTIALS: {credential_path}") # Optional: for debugging
+elif not os.getenv('K_SERVICE'):
+    # If not in Cloud Run (K_SERVICE is not set) and GOOGLE_APPLICATION_CREDENTIALS is not set,
+    # fallback to a default local credential file for convenience during local development.
+    # This part is optional and depends on your local development setup preference.
+    local_fallback_credential_path = 'xbrain_credential.json'
+    if os.path.exists(local_fallback_credential_path):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = local_fallback_credential_path
+        # print(f"Using local fallback GOOGLE_APPLICATION_CREDENTIALS: {local_fallback_credential_path}") # Optional: for debugging
+    # else:
+        # print("GOOGLE_APPLICATION_CREDENTIALS not set and local fallback not found.") # Optional: for debugging
+# else:
+    # print("Running in Cloud Run or similar environment, expecting runtime service account to be used.") # Optional: for debugging
+
 WORD = re.compile(r"\w+")
 PROJECT_ID = "xbrain-422617"
 LOCATION = "us-central1" 

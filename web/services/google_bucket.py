@@ -1,4 +1,3 @@
-import json
 import os
 from google.cloud import storage
 from django.conf import settings
