@@ -97,23 +97,8 @@ logger.info("Attempting to get Django WSGI application (this will trigger django
 try:
     application = get_wsgi_application()
     logger.info("Successfully got Django WSGI application. Django setup complete.")
+    logger.info("--- WSGI.PY SCRIPT COMPLETED SUCCESSFULLY ---")
 except Exception as e:
     logger.error(f"CRITICAL ERROR DURING DJANGO SETUP (get_wsgi_application): {e}", exc_info=True)
     # If Django setup fails, re-raise the exception to prevent Gunicorn from starting a broken worker
     raise
-
-logger.info("--- WSGI.PY SCRIPT COMPLETED SUCCESSFULLY ---")
-
-# Ensure DJANGO_SETTINGS_MODULE is set
-if "DJANGO_SETTINGS_MODULE" not in os.environ:
-    os.environ["DJANGO_SETTINGS_MODULE"] = "xblock.settings.production"
-    logger.info(f"Set DJANGO_SETTINGS_MODULE to {os.environ['DJANGO_SETTINGS_MODULE']}")
-
-try:
-    from django.core.wsgi import get_wsgi_application
-    application = get_wsgi_application()
-    logger.info("WSGI application loaded successfully")
-except Exception as e:
-    logger.error(f"Failed to load WSGI application: {str(e)}")
-    raise
-
