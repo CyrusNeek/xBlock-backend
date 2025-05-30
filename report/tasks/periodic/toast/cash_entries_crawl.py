@@ -19,7 +19,7 @@ def crawl_toast_cash_entries(toast: ToastAuth, is_initial_triggered, date=None):
     # filename = f'tmp-{toast.pk}.pem'
 
     # S3Client.s3_client.download_file(
-    #     settings.AWS_STORAGE_BUCKET_NAME,
+
     #     toast.sshkey.private_key_location,
     #     filename
     # )

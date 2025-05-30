@@ -10,7 +10,7 @@ class Transcription(models.Model):
     class TranscriptionService(models.TextChoices):
         WHISPER = "whisper", "Whisper"
         GOOGLE_CLOUD = "google_cloud", "Google Cloud Speech-to-Text"
-        MICROSOFT_AZURE = "microsoft_azure", "Microsoft Azure Speech Service"
+
         AMAZON_TRANSCRIBE = "amazon_transcribe", "Amazon Transcribe"
         PALM_2 = "palm_2", "PaLM 2"
 

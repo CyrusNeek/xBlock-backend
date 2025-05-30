@@ -32,7 +32,7 @@ def generate_ssh_key(instance: ToastAuth):
     StorageService().upload_file(private_key_location, filename)
 
     # S3Client.s3_client.upload_file(
-    #     private_key_location, settings.AWS_STORAGE_BUCKET_NAME, filename
+
     # )
 
     public_key = key.get_base64()

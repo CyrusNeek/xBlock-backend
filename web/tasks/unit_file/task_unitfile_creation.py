@@ -50,10 +50,10 @@ def task_unit_file_upload_openai(unit_file_id: int) -> None:
     )
 
     # Generate a unique local filename
-    # manager = WeaviateManager()
+
     timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
     local_filename = f"{unit.name}_{unit_file.file_name}_{timestamp}.pdf"
-    # weaviate_file_name = f"{unit.name}_{unit_file.file_name}_{timestamp}.json"
+
 
     try:
         url = unit_file.presigned_get_url
@@ -64,11 +64,11 @@ def task_unit_file_upload_openai(unit_file_id: int) -> None:
             f.write(response.content)
 
         # if not local_filename.endswith(".pdf"):
-        # weaviate_file = TextProcessor.process_pdf(local_filename)
 
-        # with open(weaviate_file_name, "w") as result_file:
-        #     json.dump(weaviate_file, result_file)
-        #     for idx, text in enumerate(weaviate_file["chunks"]):
+
+
+
+
         #         if not unit_file.file_name:
         #             unit_file.file_name = unit_file.file_url
 
@@ -88,7 +88,7 @@ def task_unit_file_upload_openai(unit_file_id: int) -> None:
         #     local_filename, unit.name, unit_file.pk
         # )
 
-        # storage_service.upload_file(weaviate_file_name, "uploads/" + weaviate_file_name)
+
 
         with open(local_filename, "rb") as f:
             openai_response = client.files.create(

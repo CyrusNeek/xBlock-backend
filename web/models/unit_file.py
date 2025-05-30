@@ -44,7 +44,7 @@ class UnitFile(models.Model):
     @property
     def presigned_get_url(self):
         """
-        Example URL: https://xblock-hub.s3.amazonaws.com/unit-file/Code/2. Jester_Handbook_6.28.23.pdf
+
         ->             {folder} / {company_name}/{file_name}
         -> object_name: unit-file/Code/2. Jester_Handbook_6.28.23.pdf
         """
